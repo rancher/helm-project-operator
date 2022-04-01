@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+source $(dirname $0)/version
+
+cd $(dirname $0)/..
+
+./scripts/build-chart
+
+mkdir -p bin
+if [ "$(uname)" = "Linux" ]; then
+    OTHER_LINKFLAGS="-extldflags -static -s"
+fi
+LINKFLAGS="-X github.com/aiyengar2/helm-project-operator/pkg/version.Version=$VERSION"
+LINKFLAGS="-X github.com/aiyengar2/helm-project-operator/pkg/version.GitCommit=$COMMIT $LINKFLAGS"
+CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/helm-project-operator
+if [ "$CROSS" = "true" ] && [ "$ARCH" = "amd64" ]; then
+    GOOS=darwin go build -ldflags "$LINKFLAGS" -o bin/helm-project-operator-darwin
+    GOOS=windows go build -ldflags "$LINKFLAGS" -o bin/helm-project-operator-windows
+fi

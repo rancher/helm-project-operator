@@ -1,0 +1,11 @@
+apiVersion: helm.cattle.io/v1alpha1
+kind: ProjectHelmChart
+metadata:
+  name: test
+  namespace: kube-system
+spec:
+  helmApiVersion: dummy.cattle.io/v1alpha1
+  values:
+    global:
+      cattle:
+        hello: world

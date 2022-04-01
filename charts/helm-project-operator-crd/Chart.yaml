@@ -1,0 +1,12 @@
+apiVersion: v2
+name: helm-project-operator-crd
+description: Helm Project Operator CustomResourceDefinitions
+version: 0.0.0
+appVersion: 0.0.0
+annotations:
+  catalog.cattle.io/certified: rancher
+  catalog.cattle.io/hidden: "true"
+  catalog.cattle.io/namespace: cattle-helm-system
+  catalog.cattle.io/release-name: helm-project-operator-crd
+  catalog.cattle.io/os: linux,windows
+  catalog.cattle.io/permits-os: linux,windows
