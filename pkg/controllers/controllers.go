@@ -34,7 +34,6 @@ import (
 	"github.com/rancher/wrangler/pkg/start"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -57,8 +56,8 @@ type appContext struct {
 	Batch          batchcontrollers.Interface
 	RBAC           rbaccontrollers.Interface
 
-	Apply         apply.Apply
-	EventRecorder record.EventRecorder
+	Apply            apply.Apply
+	EventBroadcaster record.EventBroadcaster
 
 	ClientConfig clientcmd.ClientConfig
 	starters     []start.Starter
@@ -77,6 +76,15 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 	if err != nil {
 		return err
 	}
+
+	appCtx.EventBroadcaster.StartLogging(logrus.Infof)
+	appCtx.EventBroadcaster.StartRecordingToSink(&typedv1.EventSinkImpl{
+		Interface: appCtx.K8s.CoreV1().Events(systemNamespace),
+	})
+	recorder := appCtx.EventBroadcaster.NewRecorder(schemes.All, corev1.EventSource{
+		Component: "helm-project-operator",
+		Host:      opts.NodeName,
+	})
 
 	var isRegistrationNamespace namespace.NamespaceChecker
 	if len(opts.ProjectLabel) > 0 {
@@ -116,7 +124,7 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		systemNamespace,
 		appCtx.K8s,
 		appCtx.Apply,
-		appCtx.EventRecorder,
+		recorder,
 		appCtx.HelmController.HelmChart(),
 		appCtx.HelmController.HelmChart().Cache(),
 		appCtx.HelmController.HelmChartConfig(),
@@ -157,15 +165,6 @@ func controllerFactory(rest *rest.Config) (controller.SharedControllerFactory, e
 	}), nil
 }
 
-func eventRecorder(k8s *kubernetes.Clientset, nodeName string) record.EventRecorder {
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(logrus.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedv1.EventSinkImpl{Interface: k8s.CoreV1().Events(metav1.NamespaceSystem)})
-	eventSource := corev1.EventSource{Component: "helm-project-operator"}
-	eventSource.Host = nodeName
-	return eventBroadcaster.NewRecorder(schemes.All, eventSource)
-}
-
 func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.Options) (*appContext, error) {
 	client, err := cfg.ClientConfig()
 	if err != nil {
@@ -177,8 +176,6 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 	if err != nil {
 		return nil, err
 	}
-
-	eventRecorder := eventRecorder(k8s, opts.NodeName)
 
 	discovery, err := discovery.NewDiscoveryClientForConfig(client)
 	if err != nil {
@@ -274,8 +271,8 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 		Batch:          batchv,
 		RBAC:           rbacv,
 
-		Apply:         apply.WithSetOwnerReference(false, false),
-		EventRecorder: eventRecorder,
+		Apply:            apply.WithSetOwnerReference(false, false),
+		EventBroadcaster: record.NewBroadcaster(),
 
 		ClientConfig: cfg,
 		starters: []start.Starter{
