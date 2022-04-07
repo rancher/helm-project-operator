@@ -113,8 +113,8 @@ github.com/PuerkitoBio/urlesc v0.0.0-20160726150825-5bd2802263f2/go.mod h1:uGdko
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d/go.mod h1:HI8ITrYtUY+O+ZhtlqUnD8+KwNPOyugEhfP9fdUIaEQ=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
-github.com/aiyengar2/helm-controller v0.0.0-20220407144753-1c8f9b8b1af2 h1:n32WfUzPg2TYN0NLn8tm6LIKXgTALQ8ifIrJWTctmzc=
-github.com/aiyengar2/helm-controller v0.0.0-20220407144753-1c8f9b8b1af2/go.mod h1:ZmIZBP7FigARnQfS7da0X6hPQEqYdmbOl5V/e397ZLc=
+github.com/aiyengar2/helm-controller v0.0.0-20220407164711-2314e4c9835c h1:gQkmk7iFZdyws3WerOKM7bzpruywzEKZb48Mk7ooKO8=
+github.com/aiyengar2/helm-controller v0.0.0-20220407164711-2314e4c9835c/go.mod h1:ZmIZBP7FigARnQfS7da0X6hPQEqYdmbOl5V/e397ZLc=
 github.com/aiyengar2/helm-locker v0.0.0-20220407142808-da1cab89976f h1:+lhp80WyJtbP/Mi7EB4erX7A2mnQbsNnlNbbWQ8wUts=
 github.com/aiyengar2/helm-locker v0.0.0-20220407142808-da1cab89976f/go.mod h1:CjBMa+iPce7uPLAwawS8uZkN0QIPDTta+FsFrg0PVkE=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
