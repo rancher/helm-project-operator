@@ -36,8 +36,8 @@ type DummyOperator struct {
 	Namespace  string `usage:"Namespace to watch for ProjectHelmCharts; this will be ignored if project label is provided" env:"NAMESPACE"`
 	NodeName   string `usage:"Name of the node this controller is running on" env:"NODE_NAME"`
 
-	ProjectLabel    string `usage:"Label on namespaces to create Project Registration Namespaces and watch for ProjectHelmCharts" env:"PROJECT_LABEL"`
-	SystemProjectID string `usage:"Value on project label on namespaces that marks it as a system namespace" env:"SYSTEM_PROJECT_ID"`
+	ProjectLabel            string `usage:"Label on namespaces to create Project Registration Namespaces and watch for ProjectHelmCharts" env:"PROJECT_LABEL"`
+	SystemProjectLabelValue string `usage:"Value on project label on namespaces that marks it as a system namespace" env:"SYSTEM_PROJECT_LABEL_VALUE"`
 }
 
 func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
@@ -56,8 +56,8 @@ func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 		SystemNamespaces: DummySystemNamespaces,
 		ChartContent:     base64TgzChart,
 
-		ProjectLabel:    o.ProjectLabel,
-		SystemProjectID: o.SystemProjectID,
+		ProjectLabel:            o.ProjectLabel,
+		SystemProjectLabelValue: o.SystemProjectLabelValue,
 
 		NodeName: o.NodeName,
 	}); err != nil {

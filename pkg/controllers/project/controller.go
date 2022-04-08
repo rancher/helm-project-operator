@@ -14,6 +14,7 @@ import (
 	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
 	helm "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
+	"github.com/rancher/wrangler/pkg/data"
 	"github.com/rancher/wrangler/pkg/relatedresource"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -30,13 +31,13 @@ var (
 )
 
 type handler struct {
-	systemNamespace         string
-	opts                    common.Options
-	projectHelmCharts       helmproject.ProjectHelmChartController
-	projectHelmChartCache   helmproject.ProjectHelmChartCache
-	helmCharts              helm.HelmChartController
-	helmReleases            helmlocker.HelmReleaseController
-	isRegistrationNamespace namespace.NamespaceChecker
+	systemNamespace       string
+	opts                  common.Options
+	projectHelmCharts     helmproject.ProjectHelmChartController
+	projectHelmChartCache helmproject.ProjectHelmChartCache
+	helmCharts            helm.HelmChartController
+	helmReleases          helmlocker.HelmReleaseController
+	projectGetter         namespace.ProjectGetter
 }
 
 func Register(
@@ -48,17 +49,17 @@ func Register(
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
 	helmCharts helm.HelmChartController,
 	helmReleases helmlocker.HelmReleaseController,
-	isRegistrationNamespace namespace.NamespaceChecker,
+	projectGetter namespace.ProjectGetter,
 ) {
 
 	h := &handler{
-		systemNamespace:         systemNamespace,
-		opts:                    opts,
-		projectHelmCharts:       projectHelmCharts,
-		projectHelmChartCache:   projectHelmChartCache,
-		helmCharts:              helmCharts,
-		helmReleases:            helmReleases,
-		isRegistrationNamespace: isRegistrationNamespace,
+		systemNamespace:       systemNamespace,
+		opts:                  opts,
+		projectHelmCharts:     projectHelmCharts,
+		projectHelmChartCache: projectHelmChartCache,
+		helmCharts:            helmCharts,
+		helmReleases:          helmReleases,
+		projectGetter:         projectGetter,
 	}
 
 	helmproject.RegisterProjectHelmChartGeneratingHandler(ctx,
@@ -76,7 +77,11 @@ func Register(
 }
 
 func (h *handler) resolveProjectHelmChartOwned(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
-	if !h.isRegistrationNamespace(namespace) {
+	isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(namespace)
+	if err != nil {
+		return nil, err
+	}
+	if !isProjectRegistrationNamespace {
 		// only watching resources in registered namespaces
 		return nil, nil
 	}
@@ -87,8 +92,11 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	if projectHelmChart == nil {
 		return nil, projectHelmChartStatus, nil
 	}
-
-	if !h.isRegistrationNamespace(projectHelmChart.Namespace) {
+	isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(projectHelmChart.Namespace)
+	if err != nil {
+		return nil, projectHelmChartStatus, err
+	}
+	if !isProjectRegistrationNamespace {
 		// only watching resources in registered namespaces
 		return nil, projectHelmChartStatus, nil
 	}
@@ -98,7 +106,19 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 		return nil, projectHelmChartStatus, err
 	}
 
-	valuesContentBytes, err := projectHelmChart.Spec.Values.ToYAML()
+	targetProjectNamespaces, err := h.projectGetter.GetTargetProjectNamespaces(projectHelmChart)
+	if err != nil {
+		return nil, projectHelmChartStatus, fmt.Errorf("unable to get target project namespces for projectHelmChart %s/%s", projectHelmChart.Namespace, projectHelmChart.Name)
+	}
+
+	values := v1alpha1.GenericMap(data.MergeMaps(projectHelmChart.Spec.Values, map[string]interface{}{
+		"global": map[string]interface{}{
+			"cattle": map[string]interface{}{
+				"projectNamespaces": targetProjectNamespaces,
+			},
+		},
+	}))
+	valuesContentBytes, err := values.ToYAML()
 	if err != nil {
 		return nil, projectHelmChartStatus, fmt.Errorf("unable to marshall spec.values of %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Name, err)
 	}

@@ -14,8 +14,8 @@ type Options struct {
 	SystemNamespaces []string
 	ChartContent     string
 
-	ProjectLabel    string
-	SystemProjectID string
+	ProjectLabel            string
+	SystemProjectLabelValue string
 
 	HelmJobImage string
 	NodeName     string
@@ -35,8 +35,8 @@ func (opts Options) Validate() error {
 
 	if len(opts.ProjectLabel) > 0 {
 		logrus.Infof("Creating dedicated project system namespaces based on the value found for the project label %s on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up", opts.ProjectLabel)
-		if len(opts.SystemProjectID) > 0 {
-			logrus.Infof("Assuming namespaces tagged with %s=%s are also system namespaces; this label will also be added on all dedicated project system namespaces created by this operator", opts.ProjectLabel, opts.SystemProjectID)
+		if len(opts.SystemProjectLabelValue) > 0 {
+			logrus.Infof("Assuming namespaces tagged with %s=%s are also system namespaces; this label will also be added on all dedicated project system namespaces created by this operator", opts.ProjectLabel, opts.SystemProjectLabelValue)
 		}
 	}
 	return nil

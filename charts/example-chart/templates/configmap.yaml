@@ -6,6 +6,8 @@ metadata:
 data:
   config: |- 
 {{ .Values.data | toYaml | indent 4 }}
+  project-namespaces: |- 
+{{ .Values.global.cattle.projectNamespaces | toYaml | indent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -15,3 +17,5 @@ metadata:
 data:
   config: |- 
 {{ .Values.data | toYaml | indent 4 }}
+  project-namespaces: |- 
+{{ .Values.global.cattle.projectNamespaces | toYaml | indent 4 }}

@@ -2,10 +2,26 @@ apiVersion: helm.cattle.io/v1alpha1
 kind: ProjectHelmChart
 metadata:
   name: test
-  namespace: kube-system
+  namespace: cattle-project-p-77248-system
 spec:
   helmApiVersion: dummy.cattle.io/v1alpha1
+  projectNamespaceSelector:
+    matchLabels:
+      field.cattle.io/projectId: p-nj7nx
   values:
-    global:
-      cattle:
-        hello: world
+    data:
+      hello: family
+---
+# apiVersion: helm.cattle.io/v1alpha1
+# kind: ProjectHelmChart
+# metadata:
+#   name: test
+#   namespace: cattle-project-p-62jpq-system
+# spec:
+#   helmApiVersion: dummy.cattle.io/v1alpha1
+#   projectNamespaceSelector:
+#     matchLabels:
+#       field.cattle.io/projectId: p-nj7nx
+#   values:
+#     data:
+#       hello: family

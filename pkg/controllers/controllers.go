@@ -71,6 +71,8 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 	if len(systemNamespace) == 0 {
 		return errors.New("cannot start controllers on system namespace: system namespace not provided")
 	}
+	// always add the systemNamespace to the systemNamespaces provided
+	opts.SystemNamespaces = append(opts.SystemNamespaces, systemNamespace)
 
 	appCtx, err := newContext(cfg, systemNamespace, opts)
 	if err != nil {
@@ -86,18 +88,24 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		Host:      opts.NodeName,
 	})
 
-	var isRegistrationNamespace namespace.NamespaceChecker
+	var projectGetter namespace.ProjectGetter
 	if len(opts.ProjectLabel) > 0 {
 		// add controllers that create dedicated project namespaces
-		isRegistrationNamespace = namespace.Register(ctx,
+		projectGetter = namespace.Register(ctx,
 			appCtx.Apply,
 			opts.ProjectLabel,
-			opts.SystemProjectID,
-			append(opts.SystemNamespaces, systemNamespace),
+			opts.SystemProjectLabelValue,
+			opts.SystemNamespaces,
 			appCtx.Core.Namespace(),
-			appCtx.Core.Namespace().Cache())
+			appCtx.Core.Namespace().Cache(),
+			appCtx.ProjectHelmChart(),
+			appCtx.ProjectHelmChart().Cache(),
+		)
 	} else {
-		isRegistrationNamespace = namespace.SingleNamespaceChecker(systemNamespace)
+		projectGetter = namespace.NewSingleNamespaceProjectGetter(
+			systemNamespace,
+			opts.SystemNamespaces,
+			appCtx.Core.Namespace().Cache())
 	}
 
 	project.Register(ctx,
@@ -108,7 +116,7 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.ProjectHelmChart().Cache(),
 		appCtx.HelmController.HelmChart(),
 		appCtx.HelmLocker.HelmRelease(),
-		isRegistrationNamespace,
+		projectGetter,
 	)
 
 	release.Register(ctx,
