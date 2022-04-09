@@ -29,15 +29,11 @@ var (
 	debugConfig command.DebugConfig
 )
 
-type DummyType map[string]interface{}
-
 type DummyOperator struct {
-	Kubeconfig string `usage:"Kubeconfig file"`
-	Namespace  string `usage:"Namespace to watch for ProjectHelmCharts; this will be ignored if project label is provided" env:"NAMESPACE"`
-	NodeName   string `usage:"Name of the node this controller is running on" env:"NODE_NAME"`
+	// Note: all Project Operator are expected to provide these RuntimeOptions
+	common.RuntimeOptions
 
-	ProjectLabel    string `usage:"Label on namespaces to create Project Registration Namespaces and watch for ProjectHelmCharts" env:"PROJECT_LABEL"`
-	SystemProjectID string `usage:"Value on project label on namespaces that marks it as a system namespace" env:"SYSTEM_PROJECT_ID"`
+	Kubeconfig string `usage:"Kubeconfig file"`
 }
 
 func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
@@ -51,15 +47,15 @@ func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	if err := operator.Init(ctx, o.Namespace, cfg, common.Options{
+		// These fields are provided by the Project Operator
 		HelmApiVersion:   DummyHelmApiVersion,
-		ValuesType:       DummyType{},
 		SystemNamespaces: DummySystemNamespaces,
 		ChartContent:     base64TgzChart,
 
-		ProjectLabel:    o.ProjectLabel,
-		SystemProjectID: o.SystemProjectID,
-
-		NodeName: o.NodeName,
+		// These fields are provided on runtime for all project operators
+		ProjectLabel:            o.ProjectLabel,
+		SystemProjectLabelValue: o.SystemProjectLabelValue,
+		NodeName:                o.NodeName,
 	}); err != nil {
 		return err
 	}

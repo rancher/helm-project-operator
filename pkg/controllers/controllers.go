@@ -34,6 +34,7 @@ import (
 	"github.com/rancher/wrangler/pkg/start"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -71,6 +72,14 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 	if len(systemNamespace) == 0 {
 		return errors.New("cannot start controllers on system namespace: system namespace not provided")
 	}
+	// always add the systemNamespace to the systemNamespaces provided
+	opts.SystemNamespaces = append(opts.SystemNamespaces, systemNamespace)
+
+	// parse values.yaml and questions.yaml from file
+	valuesYaml, questionsYaml, err := parseValuesAndQuestions(opts.ChartContent)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 
 	appCtx, err := newContext(cfg, systemNamespace, opts)
 	if err != nil {
@@ -86,18 +95,33 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		Host:      opts.NodeName,
 	})
 
-	var isRegistrationNamespace namespace.NamespaceChecker
+	var projectGetter namespace.ProjectGetter
 	if len(opts.ProjectLabel) > 0 {
 		// add controllers that create dedicated project namespaces
-		isRegistrationNamespace = namespace.Register(ctx,
+		projectGetter = namespace.Register(ctx,
 			appCtx.Apply,
 			opts.ProjectLabel,
-			opts.SystemProjectID,
-			append(opts.SystemNamespaces, systemNamespace),
+			opts.SystemProjectLabelValue,
+			opts.SystemNamespaces,
 			appCtx.Core.Namespace(),
-			appCtx.Core.Namespace().Cache())
+			appCtx.Core.Namespace().Cache(),
+			appCtx.ProjectHelmChart(),
+			appCtx.ProjectHelmChart().Cache(),
+			addChartDataWrapper(opts.HelmApiVersion, questionsYaml, valuesYaml, appCtx),
+		)
 	} else {
-		isRegistrationNamespace = namespace.SingleNamespaceChecker(systemNamespace)
+		projectGetter = namespace.NewSingleNamespaceProjectGetter(
+			systemNamespace,
+			opts.SystemNamespaces,
+			appCtx.Core.Namespace(),
+		)
+		systemNamespaceObj, err := appCtx.Core.Namespace().Get(systemNamespace, v1.GetOptions{})
+		if err != nil {
+			logrus.Fatalf("unable to get systemNamespace %s", systemNamespace)
+		}
+		if err := addChartData(systemNamespaceObj, opts.HelmApiVersion, questionsYaml, valuesYaml, appCtx); err != nil {
+			logrus.Fatal(err)
+		}
 	}
 
 	project.Register(ctx,
@@ -108,7 +132,7 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.ProjectHelmChart().Cache(),
 		appCtx.HelmController.HelmChart(),
 		appCtx.HelmLocker.HelmRelease(),
-		isRegistrationNamespace,
+		projectGetter,
 	)
 
 	release.Register(ctx,
