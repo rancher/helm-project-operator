@@ -1,2 +1,6 @@
+global:
+  cattle:
+    projectNamespaces: []
+
 data:
   hello: world
