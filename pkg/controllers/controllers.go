@@ -102,12 +102,13 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 			appCtx.Apply,
 			opts.ProjectLabel,
 			opts.SystemProjectLabelValue,
+			opts.ClusterID,
 			opts.SystemNamespaces,
 			appCtx.Core.Namespace(),
 			appCtx.Core.Namespace().Cache(),
 			appCtx.ProjectHelmChart(),
 			appCtx.ProjectHelmChart().Cache(),
-			addChartDataWrapper(opts.HelmApiVersion, questionsYaml, valuesYaml, appCtx),
+			addChartDataWrapper(ctx, opts.HelmApiVersion, questionsYaml, valuesYaml, appCtx),
 		)
 	} else {
 		projectGetter = namespace.NewSingleNamespaceProjectGetter(
@@ -176,7 +177,6 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 
 func controllerFactory(rest *rest.Config) (controller.SharedControllerFactory, error) {
 	rateLimit := workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 60*time.Second)
-	workqueue.DefaultControllerRateLimiter()
 	clientFactory, err := client.NewSharedClientFactory(rest, nil)
 	if err != nil {
 		return nil, err

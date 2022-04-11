@@ -25,6 +25,7 @@ type OnNamespaceFunc func(*v1.Namespace) error
 type handler struct {
 	projectLabel            string
 	systemProjectLabelValue string
+	clusterID               string
 
 	systemNamespaces map[string]bool
 	systemMapLock    sync.RWMutex
@@ -51,6 +52,7 @@ func Register(
 	apply apply.Apply,
 	projectLabel string,
 	systemProjectLabelValue string,
+	clusterID string,
 	systemNamespaceList []string,
 	namespaces core.NamespaceController,
 	namespaceCache core.NamespaceCache,
@@ -76,6 +78,7 @@ func Register(
 		apply:                          apply,
 		projectLabel:                   projectLabel,
 		systemProjectLabelValue:        systemProjectLabelValue,
+		clusterID:                      clusterID,
 		systemNamespaces:               systemNamespaces,
 		projectRegistrationNamespaces:  make(map[string]*v1.Namespace),
 		namespaces:                     namespaces,
@@ -146,9 +149,11 @@ func (h *handler) OnChange(name string, namespace *v1.Namespace) (*v1.Namespace,
 	}
 
 	switch {
-	case h.isSystemNamespace(namespace):
-		// nothing to do, we always ignore system namespaces
-		return namespace, nil
+	// note: the check for a project registration namespace must happen before
+	// we check for whether it is a system namespace to address the scenario where
+	// the 'projectLabel: systemProjectLabelValue' is added to the project registration
+	// namespace, which will cause it to be ignored and left in the System Project unless
+	// we apply the ProjectRegistrationNamespace logic first.
 	case h.isProjectRegistrationNamespace(namespace):
 		err := h.enqueueProjectNamespaces(namespace)
 		if err != nil {
@@ -157,6 +162,9 @@ func (h *handler) OnChange(name string, namespace *v1.Namespace) (*v1.Namespace,
 		if namespace.DeletionTimestamp != nil {
 			h.deleteProjectRegistrationNamespace(namespace)
 		}
+		return namespace, nil
+	case h.isSystemNamespace(namespace):
+		// nothing to do, we always ignore system namespaces
 		return namespace, nil
 	default:
 		err := h.applyProjectRegistrationNamespaceForNamespace(namespace)
@@ -203,10 +211,18 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 		return nil
 	}
 
+	projectIDWithClusterID := projectID
+	if len(h.clusterID) > 0 {
+		projectIDWithClusterID = fmt.Sprintf("%s:%s", h.clusterID, projectID)
+	}
+
 	// define the expected projectRegistrationNamespace
 	projectRegistrationNamespace := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: projectRegistrationNamespaceName,
+			Annotations: map[string]string{
+				h.projectLabel: projectIDWithClusterID,
+			},
 			Labels: map[string]string{
 				common.HelmProjectOperatedLabel: "true",
 				h.projectLabel:                  projectID,

@@ -14,6 +14,7 @@ type Options struct {
 
 	ProjectLabel            string
 	SystemProjectLabelValue string
+	ClusterID               string
 
 	HelmJobImage string
 	NodeName     string
@@ -25,7 +26,7 @@ func (opts Options) Validate() error {
 	}
 
 	if len(opts.SystemNamespaces) > 0 {
-		logrus.Infof("marking the following namespaces as system namespaces: %s", opts.SystemNamespaces)
+		logrus.Infof("Marking the following namespaces as system namespaces: %s", opts.SystemNamespaces)
 	}
 
 	if len(opts.ChartContent) == 0 {
@@ -33,18 +34,21 @@ func (opts Options) Validate() error {
 	}
 
 	if len(opts.ProjectLabel) > 0 {
-		logrus.Infof("creating dedicated project registration namespaces to discover ProjectHelmCharts based on the value found for the project label %s on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, HelmProjectOperatedOrphanedLabel)
+		logrus.Infof("Creating dedicated project registration namespaces to discover ProjectHelmCharts based on the value found for the project label %s on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, HelmProjectOperatedOrphanedLabel)
 		if len(opts.SystemProjectLabelValue) > 0 {
 			logrus.Infof("assuming namespaces tagged with %s=%s are also system namespaces", opts.ProjectLabel, opts.SystemProjectLabelValue)
+		}
+		if len(opts.ClusterID) > 0 {
+			logrus.Infof("Marking project registration namespaces with %s=%s:<projectID>", opts.ProjectLabel, opts.ClusterID)
 		}
 	}
 
 	if len(opts.HelmJobImage) > 0 {
-		logrus.Infof("using %s as spec.JobImage on all generated HelmChart resources", opts.HelmJobImage)
+		logrus.Infof("Using %s as spec.JobImage on all generated HelmChart resources", opts.HelmJobImage)
 	}
 
 	if len(opts.NodeName) > 0 {
-		logrus.Infof("marking events as being sourced from node %s", opts.NodeName)
+		logrus.Infof("Marking events as being sourced from node %s", opts.NodeName)
 	}
 	return nil
 }

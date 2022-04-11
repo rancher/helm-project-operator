@@ -9,13 +9,19 @@ type RuntimeOptions struct {
 	// NodeName is the name of the node running the operator; it adds additional information to events about where they were generated from
 	NodeName string `usage:"Name of the node this controller is running on" env:"NODE_NAME"`
 
+	// ClusterID identifies the cluster that the operator is being operated frmo within; it adds an additional annotation to project registration
+	// namespaces that indicates the projectID with the cluster label.
+	//
+	// Note: primarily used for integration with Rancher Projects
+	ClusterID string `usage:"Identifies the cluster this controller is running on. Ignored if --project-label is not provided." env:"CLUSTER_ID"`
+
 	// ProjectLabel is the label that identifies projects
 	// Note: this field is optional and ensures that ProjectHelmCharts auto-infer their spec.projectNamespaceSelector
 	// If provided, any spec.projectNamespaceSelector provided will be ignored
 	// example: field.cattle.io/projectId
 	ProjectLabel string `usage:"Label on namespaces to create Project Registration Namespaces and watch for ProjectHelmCharts" env:"PROJECT_LABEL"`
 
-	// SystemProjectLabelValue is the value of thr ProjectLabel that identifies system namespaces. Does nothing if ProjectLabel is not provided
+	// SystemProjectLabelValue is the value of the ProjectLabel that identifies system namespaces. Does nothing if ProjectLabel is not provided
 	// example: p-ranch
 	// If both this and the above example are provided, any namespaces with label 'field.cattle.io/projectId: p-ranch' will be treated
 	// as a systemNamespace, which means that no ProjectHelmChart will be allowed to select it
