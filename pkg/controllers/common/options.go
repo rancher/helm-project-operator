@@ -9,6 +9,7 @@ import (
 // Options defines options that can be set on initializing the HelmProjectOperator
 type Options struct {
 	HelmApiVersion   string
+	ReleaseName      string
 	SystemNamespaces []string
 	ChartContent     string
 
@@ -23,6 +24,10 @@ type Options struct {
 func (opts Options) Validate() error {
 	if len(opts.HelmApiVersion) == 0 {
 		return errors.New("must provide a spec.helmApiVersion that this project operator is being initialized for")
+	}
+
+	if len(opts.ReleaseName) == 0 {
+		return errors.New("must provide name of Helm release that this project operator should deploy")
 	}
 
 	if len(opts.SystemNamespaces) > 0 {

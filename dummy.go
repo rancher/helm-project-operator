@@ -18,6 +18,7 @@ import (
 
 const (
 	DummyHelmApiVersion = "dummy.cattle.io/v1alpha1"
+	DummyReleaseName    = "dummy"
 )
 
 var (
@@ -49,6 +50,7 @@ func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 	if err := operator.Init(ctx, o.Namespace, cfg, common.Options{
 		// These fields are provided by the Project Operator
 		HelmApiVersion:   DummyHelmApiVersion,
+		ReleaseName:      DummyReleaseName,
 		SystemNamespaces: DummySystemNamespaces,
 		ChartContent:     base64TgzChart,
 
