@@ -1,5 +1,7 @@
 global:
   cattle:
+    projectID: ""
+    systemProjectID: ""
     projectNamespaces: []
 
 data:
