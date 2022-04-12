@@ -17,8 +17,8 @@ func addChartDataWrapper(ctx context.Context, helmApiVersion, questionsYaml, val
 	// setup watch on configmap to trigger namespace enqueue
 	relatedresource.WatchClusterScoped(ctx, "sync-namespace-data",
 		func(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
-			// enqueue based on name
-			if name != getConfigMapName(name) {
+			// enqueue based on configMap name match
+			if name != getConfigMapName(helmApiVersion) {
 				return nil, nil
 			}
 			return []relatedresource.Key{{

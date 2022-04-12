@@ -9,15 +9,11 @@ import (
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/pkg/apply"
-	core "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-)
-
-const (
-	ProjectRegistrationNamespaceFmt = "cattle-project-%s"
 )
 
 type OnNamespaceFunc func(*v1.Namespace) error
@@ -33,8 +29,8 @@ type handler struct {
 	projectRegistrationNamespaces map[string]*v1.Namespace
 	projectRegistrationMapLock    sync.RWMutex
 
-	namespaces            core.NamespaceController
-	namespaceCache        core.NamespaceCache
+	namespaces            corecontrollers.NamespaceController
+	namespaceCache        corecontrollers.NamespaceCache
 	projectHelmCharts     helmproject.ProjectHelmChartController
 	projectHelmChartCache helmproject.ProjectHelmChartCache
 
@@ -54,8 +50,8 @@ func Register(
 	systemProjectLabelValue string,
 	clusterID string,
 	systemNamespaceList []string,
-	namespaces core.NamespaceController,
-	namespaceCache core.NamespaceCache,
+	namespaces corecontrollers.NamespaceController,
+	namespaceCache corecontrollers.NamespaceCache,
 	projectHelmCharts helmproject.ProjectHelmChartController,
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
 	onProjectRegistrationNamespace OnNamespaceFunc,
@@ -204,10 +200,16 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 		return nil
 	}
 	// ensure that the projectRegistrationNamespace created from this projectID is valid
-	projectRegistrationNamespaceName := fmt.Sprintf(ProjectRegistrationNamespaceFmt, projectID)
+	projectRegistrationNamespaceName := fmt.Sprintf(common.ProjectRegistrationNamespaceFmt, projectID)
 	if len(projectRegistrationNamespaceName) > 63 {
 		// ensure that we don't try to create a namespace with too big of a name
 		logrus.Errorf("could not apply namespace with name %s: name is above 63 characters", projectRegistrationNamespaceName)
+		return nil
+	}
+	if projectRegistrationNamespaceName == namespace.Name {
+		// the only way this would happen is if h.isProjectRegistrationNamespace(namespace), which means the
+		// the project registration namespace was removed from the cluster after it was orphaned (but still in the project
+		// since it has the projectID label on it). In this case, we can safely ignore and continue
 		return nil
 	}
 

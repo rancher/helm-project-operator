@@ -15,16 +15,13 @@ import (
 	helm "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/data"
+	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/relatedresource"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-)
-
-const (
-	// 63 is the maximum number of characters for any resource created in the Kubernetes API
-	// since we create child resources, which seem to take at least 14 characters for something like
-	// "chart-values-%s", we need to ensure that the sum total of {namespace}/{name} does not exceed this value
-	MaxNumberOfCharacters = 63 - 14
 )
 
 var (
@@ -34,10 +31,12 @@ var (
 type handler struct {
 	systemNamespace       string
 	opts                  common.Options
+	apply                 apply.Apply
 	projectHelmCharts     helmproject.ProjectHelmChartController
 	projectHelmChartCache helmproject.ProjectHelmChartCache
 	helmCharts            helm.HelmChartController
 	helmReleases          helmlocker.HelmReleaseController
+	namespaceCache        corecontrollers.NamespaceCache
 	projectGetter         namespace.ProjectGetter
 }
 
@@ -50,29 +49,42 @@ func Register(
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
 	helmCharts helm.HelmChartController,
 	helmReleases helmlocker.HelmReleaseController,
+	namespaces corecontrollers.NamespaceController,
+	namespaceCache corecontrollers.NamespaceCache,
 	projectGetter namespace.ProjectGetter,
 ) {
+
+	apply = apply.
+		WithSetID("project-helm-chart-applier").
+		WithCacheTypes(
+			helmCharts,
+			helmReleases,
+			namespaces).
+		WithNoDeleteGVK(namespaces.GroupVersionKind())
 
 	h := &handler{
 		systemNamespace:       systemNamespace,
 		opts:                  opts,
+		apply:                 apply,
 		projectHelmCharts:     projectHelmCharts,
 		projectHelmChartCache: projectHelmChartCache,
 		helmCharts:            helmCharts,
 		helmReleases:          helmReleases,
+		namespaceCache:        namespaceCache,
 		projectGetter:         projectGetter,
 	}
 
 	helmproject.RegisterProjectHelmChartGeneratingHandler(ctx,
 		projectHelmCharts,
-		apply.WithCacheTypes(
-			helmCharts,
-			helmReleases,
-		),
+		apply,
 		"",
 		"project-helm-chart-registration",
 		h.OnChange,
-		nil)
+		&generic.GeneratingHandlerOptions{
+			AllowClusterScoped: true,
+		})
+
+	projectHelmCharts.OnRemove(ctx, "remove-project-helm-chart", h.OnRemove)
 
 	relatedresource.Watch(ctx, "sync-helm-resources", h.resolveProjectHelmChartOwned, projectHelmCharts, helmCharts, helmReleases)
 }
@@ -128,10 +140,12 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 		return nil, projectHelmChartStatus, nil
 	}
 
-	chartName, err := getChartName(projectHelmChart)
+	projectID, err := h.getProjectID(projectHelmChart)
 	if err != nil {
 		return nil, projectHelmChartStatus, err
 	}
+
+	projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, projectHelmChart)
 
 	targetProjectNamespaces, err := h.projectGetter.GetTargetProjectNamespaces(projectHelmChart)
 	if err != nil {
@@ -140,18 +154,35 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	if len(targetProjectNamespaces) == 0 {
 		projectHelmChartStatus.ProjectHelmChartStatus = "NoTargetProjectNamespacesExist"
 		projectHelmChartStatus.ProjectHelmChartStatusMessage = "There are no project namespaces to deploy a ProjectHelmChart."
-		return nil, projectHelmChartStatus, nil
+		projectHelmChartStatus.ProjectNamespaces = nil
+		projectHelmChartStatus.ProjectSystemNamespace = ""
+		projectHelmChartStatus.ProjectReleaseNamespace = ""
+		var objs []runtime.Object
+		if projectReleaseNamespace != nil {
+			// always patch the projectReleaseNamespace to orphaned if it exists
+			projectReleaseNamespace.Labels[common.HelmProjectOperatedOrphanedLabel] = "true"
+			objs = append(objs, projectReleaseNamespace)
+		}
+		return objs, projectHelmChartStatus, nil
 	} else {
 		projectHelmChartStatus.ProjectHelmChartStatus = "ValidatedNamespaces"
-		projectHelmChartStatus.ProjectNamespaces = targetProjectNamespaces
-		projectHelmChartStatus.ProjectSystemNamespace = h.systemNamespace
 		projectHelmChartStatus.ProjectHelmChartStatusMessage = "ProjectHelmChart targets a valid set of namespaces."
+		projectHelmChartStatus.ProjectSystemNamespace = h.systemNamespace
+		projectHelmChartStatus.ProjectReleaseNamespace = h.systemNamespace
+		if projectReleaseNamespace != nil {
+			// ensure it is added to targets and updated on the status
+			targetProjectNamespaces = append(targetProjectNamespaces, projectReleaseNamespace.Name)
+			projectHelmChartStatus.ProjectReleaseNamespace = projectReleaseNamespace.Name
+		}
+		projectHelmChartStatus.ProjectNamespaces = targetProjectNamespaces
 	}
 
 	values := v1alpha1.GenericMap(data.MergeMaps(projectHelmChart.Spec.Values, map[string]interface{}{
 		"global": map[string]interface{}{
 			"cattle": map[string]interface{}{
 				"projectNamespaces": targetProjectNamespaces,
+				"projectID":         projectID,
+				"systemProjectID":   h.opts.SystemProjectLabelValue,
 			},
 		},
 	}))
@@ -163,31 +194,50 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	projectHelmChartStatus.ProjectHelmChartStatus = "Validated"
 	projectHelmChartStatus.ProjectHelmChartStatusMessage = "ProjectHelmChart has valid values and target namespaces. HelmChart and HelmRelease should be deployed."
 
-	return []runtime.Object{
-		h.getHelmChart(chartName, string(valuesContentBytes), projectHelmChart),
-		h.getHelmRelease(chartName, projectHelmChart),
-	}, projectHelmChartStatus, nil
-}
-
-func getChartName(projectHelmChart *v1alpha1.ProjectHelmChart) (string, error) {
-	chartName := fmt.Sprintf("%s-%s", projectHelmChart.Namespace, projectHelmChart.Name)
-	if len(chartName) > MaxNumberOfCharacters {
-		return "", fmt.Errorf("projectHelmChart %s/%s will create child resources that exceed the max length of characters for Kubernetes objects: chart name %s must be at most %d characters log",
-			projectHelmChart.Namespace, projectHelmChart.Name, chartName, MaxNumberOfCharacters)
+	var objs []runtime.Object
+	if projectReleaseNamespace != nil {
+		// add only if necessary
+		objs = []runtime.Object{projectReleaseNamespace}
 	}
-	return chartName, nil
+	return append(objs,
+		h.getHelmChart(string(valuesContentBytes), projectHelmChart),
+		h.getHelmRelease(projectHelmChart),
+	), projectHelmChartStatus, nil
 }
 
-func (h *handler) getHelmChart(chartName, valuesContent string, projectHelmChart *v1alpha1.ProjectHelmChart) *helmapi.HelmChart {
+func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmChart) (*v1alpha1.ProjectHelmChart, error) {
+	if len(h.opts.ProjectLabel) == 0 || len(h.opts.SystemProjectLabelValue) == 0 {
+		// nothing to do
+		return projectHelmChart, nil
+	}
+	// patch the project release namespace with the orphaned annotation
+	projectID, err := h.getProjectID(projectHelmChart)
+	if err != nil {
+		return projectHelmChart, err
+	}
+
+	// get and mark as orphaned
+	projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, projectHelmChart)
+	projectReleaseNamespace.Labels[common.HelmProjectOperatedOrphanedLabel] = "true"
+
+	err = h.apply.ApplyObjects(projectReleaseNamespace)
+	if err != nil {
+		return projectHelmChart, fmt.Errorf("unable to add orphaned annotation to project release namespace %s", projectReleaseNamespace.Name)
+	}
+	return projectHelmChart, nil
+}
+
+func (h *handler) getHelmChart(valuesContent string, projectHelmChart *v1alpha1.ProjectHelmChart) *helmapi.HelmChart {
 	// must be in system namespace since helm controllers are configured to only watch one namespace
 	jobImage := DefaultJobImage
 	if len(h.opts.HelmJobImage) > 0 {
 		jobImage = h.opts.HelmJobImage
 	}
-	helmChart := helmapi.NewHelmChart(h.systemNamespace, chartName, helmapi.HelmChart{
+	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
+	helmChart := helmapi.NewHelmChart(h.systemNamespace, releaseName, helmapi.HelmChart{
 		Spec: helmapi.HelmChartSpec{
-			Chart:           projectHelmChart.Name,
-			TargetNamespace: projectHelmChart.Namespace,
+			TargetNamespace: releaseNamespace,
+			Chart:           releaseName,
 			JobImage:        jobImage,
 			ChartContent:    h.opts.ChartContent,
 			ValuesContent:   valuesContent,
@@ -197,13 +247,14 @@ func (h *handler) getHelmChart(chartName, valuesContent string, projectHelmChart
 	return helmChart
 }
 
-func (h *handler) getHelmRelease(chartName string, projectHelmChart *v1alpha1.ProjectHelmChart) *helmlockerapi.HelmRelease {
+func (h *handler) getHelmRelease(projectHelmChart *v1alpha1.ProjectHelmChart) *helmlockerapi.HelmRelease {
 	// must be in system namespace since helmlocker controllers are configured to only watch one namespace
-	helmRelease := helmlockerapi.NewHelmRelease(h.systemNamespace, chartName, helmlockerapi.HelmRelease{
+	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
+	helmRelease := helmlockerapi.NewHelmRelease(h.systemNamespace, releaseName, helmlockerapi.HelmRelease{
 		Spec: helmlockerapi.HelmReleaseSpec{
 			Release: helmlockerapi.ReleaseKey{
-				Name:      chartName,
-				Namespace: projectHelmChart.Namespace,
+				Namespace: releaseNamespace,
+				Name:      releaseName,
 			},
 		},
 	})
@@ -211,8 +262,78 @@ func (h *handler) getHelmRelease(chartName string, projectHelmChart *v1alpha1.Pr
 	return helmRelease
 }
 
+func (h *handler) getProjectReleaseNamespace(projectID string, projectHelmChart *v1alpha1.ProjectHelmChart) *v1.Namespace {
+	releaseNamespace, _ := h.getReleaseNamespaceAndName(projectHelmChart)
+	if releaseNamespace == h.systemNamespace {
+		return nil
+	}
+	// Project Release Namespace is only created if ProjectLabel and SystemProjectLabelValue are specified
+	// It will always be created in the system project (by annotation) in order to provide least privileges to Project Owners
+	// But it will be selectable by workloads targeting the project (by label) since it still has the original project ID
+	systemProjectIDWithClusterID := h.opts.SystemProjectLabelValue
+	if len(h.opts.ClusterID) > 0 {
+		systemProjectIDWithClusterID = fmt.Sprintf("%s:%s", h.opts.ClusterID, h.opts.SystemProjectLabelValue)
+	}
+	projectReleaseNamespace := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: releaseNamespace,
+			Annotations: map[string]string{
+				// auto-imports the project into the system project for RBAC stuff
+				h.opts.ProjectLabel: systemProjectIDWithClusterID,
+			},
+			Labels: map[string]string{
+				common.HelmProjectOperatedLabel: "true",
+				// note: this annotation exists so that it's possible to define namespaceSelectors
+				// that select both all namespaces in the project AND the namespace the release resides in
+				// by selecting namespaces that have either of the following labels:
+				// - h.opts.ProjectLabel: projectID
+				// - helm.cattle.io/projectId: projectID
+				common.HelmProjectOperatorProjectLabel: projectID,
+
+				h.opts.ProjectLabel: h.opts.SystemProjectLabelValue,
+			},
+		},
+	}
+	return projectReleaseNamespace
+}
+
 func getLabels(projectHelmChart *v1alpha1.ProjectHelmChart) map[string]string {
 	return map[string]string{
 		common.HelmProjectOperatedLabel: "true",
 	}
+}
+
+func (h *handler) getProjectID(projectHelmChart *v1alpha1.ProjectHelmChart) (string, error) {
+	if len(h.opts.ProjectLabel) == 0 {
+		return "", nil
+	}
+	projectRegistrationNamespace, err := h.namespaceCache.Get(projectHelmChart.Namespace)
+	if err != nil {
+		return "", fmt.Errorf("unable to parse projectID for projectHelmChart %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Name, err)
+	}
+	projectID, ok := projectRegistrationNamespace.Labels[h.opts.ProjectLabel]
+	if !ok {
+		return "", nil
+	}
+	return projectID, nil
+}
+
+func (h *handler) getReleaseNamespaceAndName(projectHelmChart *v1alpha1.ProjectHelmChart) (string, string) {
+	if len(h.opts.ProjectLabel) == 0 {
+		// HelmCharts, HelmReleases, and ProjectHelmCharts will be in the same namespace and project release namespaces are not created
+		// Solution: use the projectHelmChart name as the differentiator per release
+		return h.systemNamespace, fmt.Sprintf("%s/%s", projectHelmChart.Name, h.opts.ReleaseName)
+	}
+	if len(h.opts.SystemProjectLabelValue) == 0 {
+		// ProjectLabel exists, which means that we are creating ProjectHelmCharts in different namespaces that HelmCharts or HelmReleases
+		// However, project release namespaces are not created, so all Helm chart deployments will be in the system namespace
+		// Solution: use projectHelmChart namespace as the differentiator per release
+		return h.systemNamespace, fmt.Sprintf("%s/%s", projectHelmChart.Namespace, h.opts.ReleaseName)
+	}
+	// ProjectHelmCharts will be in dedicated project registration namespaces in the designated Project
+	// HelmCharts and HelmReleases will be in the systemNamespace
+	// Helm deployments will go to dedicated project release namespaces in the System project
+	// Solution: we can just use h.opts.ReleaseName since there will only ever be one deployment per dedicated project release namespace
+	projectReleaseNamespaceName := fmt.Sprintf("%s-%s", projectHelmChart.Namespace, h.opts.ReleaseName)
+	return projectReleaseNamespaceName, h.opts.ReleaseName
 }
