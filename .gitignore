@@ -4,4 +4,5 @@
 /dist
 *.swp
 .idea
-helm-project-operator
+/helm-project-operator
+/.vscode

@@ -1,8 +1,8 @@
 apiVersion: v2
 name: helm-project-operator-crd
 description: Helm Project Operator CustomResourceDefinitions
-version: 0.0.0
-appVersion: 0.0.0
+version: 0.0.1
+appVersion: 0.0.1
 annotations:
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/hidden: "true"
