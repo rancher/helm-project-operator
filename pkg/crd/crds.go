@@ -81,6 +81,7 @@ func List() []crd.CRD {
 			return c.
 				WithColumn("Status", ".status.projectHelmChartStatus").
 				WithColumn("System Namespace", ".status.projectSystemNamespace").
+				WithColumn("Release Namespace", ".status.projectReleaseNamespace").
 				WithColumn("Namespaces", ".status.projectNamespaces")
 		}),
 	}

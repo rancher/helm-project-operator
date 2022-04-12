@@ -27,6 +27,7 @@ type ProjectHelmChartStatus struct {
 	ProjectHelmChartStatus        string `json:"projectHelmChartStatus"`
 	ProjectHelmChartStatusMessage string `json:"projectHelmChartStatusMessage"`
 
-	ProjectSystemNamespace string   `json:"projectSystemNamespace"`
-	ProjectNamespaces      []string `json:"projectNamespaces"`
+	ProjectSystemNamespace  string   `json:"projectSystemNamespace"`
+	ProjectReleaseNamespace string   `json:"projectReleaseNamespace"`
+	ProjectNamespaces       []string `json:"projectNamespaces"`
 }
