@@ -52,6 +52,7 @@ type appContext struct {
 
 	HelmLocker        helmlockercontrollers.Interface
 	ObjectSetRegister objectset.LockableObjectSetRegister
+	ObjectSetHandler  *controller.SharedHandler
 
 	HelmController helmcontrollers.Interface
 	Batch          batchcontrollers.Interface
@@ -142,7 +143,10 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.HelmLocker.HelmRelease().Cache(),
 		appCtx.Core.Secret(),
 		appCtx.Core.Secret().Cache(),
+		appCtx.K8s,
 		appCtx.ObjectSetRegister,
+		appCtx.ObjectSetHandler,
+		recorder,
 	)
 
 	chart.Register(ctx,
@@ -242,7 +246,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 
 	// Helm Locker Controllers - should be scoped to the system namespace only
 
-	objectSet, objectSetRegister := objectset.NewLockableObjectSetRegister("object-set-register", apply, scf, discovery, nil)
+	objectSet, objectSetRegister, objectSetHandler := objectset.NewLockableObjectSetRegister("object-set-register", apply, scf, discovery, nil)
 
 	helmlocker, err := helmlocker.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
 		SharedControllerFactory: scf,
@@ -290,6 +294,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 
 		HelmLocker:        helmlockerv,
 		ObjectSetRegister: objectSetRegister,
+		ObjectSetHandler:  objectSetHandler,
 
 		HelmController: helmv,
 		Batch:          batchv,
