@@ -2,6 +2,7 @@
 # {{- $found := dict -}}
 # {{- set $found "helm.cattle.io/v1alpha1/ProjectHelmChart" false -}}
 # {{- set $found "helm.cattle.io/v1/HelmChart" false -}}
+# {{- set $found "helm.cattle.io/v1/HelmChartConfig" false -}}
 # {{- set $found "helm.cattle.io/v1alpha1/HelmRelease" false -}}
 # {{- range .Capabilities.APIVersions -}}
 # {{- if hasKey $found (toString .) -}}

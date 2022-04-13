@@ -2,31 +2,69 @@ package crd
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 
 	helmlockercrd "github.com/aiyengar2/helm-locker/pkg/crd"
 	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	helmcontrollercrd "github.com/k3s-io/helm-controller/pkg/crd"
 	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/yaml"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 )
 
-func WriteFile(filename string) error {
-	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+func WriteFiles(dirpath string) error {
+	if err := os.MkdirAll(dirpath, 0755); err != nil {
 		return err
 	}
-	f, err := os.Create(filename)
+
+	objMap := make(map[string][]byte)
+
+	objs, err := Objects(false)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
-	return Print(f)
+	for _, o := range objs {
+		data, err := yaml.Export(o)
+		if err != nil {
+			return err
+		}
+		meta, err := meta.Accessor(o)
+		if err != nil {
+			return err
+		}
+		key := strings.SplitN(meta.GetName(), ".", 2)[0]
+		objMap[key] = data
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(objMap))
+	for key, data := range objMap {
+		go func(key string, data []byte) {
+			defer wg.Done()
+			f, err := os.Create(filepath.Join(dirpath, fmt.Sprintf("crd-%s.yaml", key)))
+			if err != nil {
+				logrus.Error(err)
+			}
+			defer f.Close()
+			_, err = f.Write(data)
+			if err != nil {
+				logrus.Error(err)
+			}
+		}(key, data)
+	}
+	wg.Wait()
+
+	return nil
 }
 
 func Print(out io.Writer) error {
