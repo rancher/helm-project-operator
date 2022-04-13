@@ -87,7 +87,7 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		return err
 	}
 
-	appCtx.EventBroadcaster.StartLogging(logrus.Infof)
+	appCtx.EventBroadcaster.StartLogging(logrus.Debugf)
 	appCtx.EventBroadcaster.StartRecordingToSink(&typedv1.EventSinkImpl{
 		Interface: appCtx.K8s.CoreV1().Events(systemNamespace),
 	})
