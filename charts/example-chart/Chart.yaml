@@ -5,7 +5,7 @@ version: 0.0.0
 appVersion: 0.0.0
 annotations:
   catalog.cattle.io/certified: rancher
-  catalog.cattle.io/namespace: cattle-helm-example-system
+  catalog.cattle.io/hidden: "true"
   catalog.cattle.io/release-name: example-chart
   catalog.cattle.io/os: linux,windows
   catalog.cattle.io/permits-os: linux,windows
