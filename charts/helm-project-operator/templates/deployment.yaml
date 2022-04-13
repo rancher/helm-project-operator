@@ -21,7 +21,9 @@ spec:
           image: "{{ template "system_default_registry" . }}{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: "{{ .Values.image.pullPolicy }}"
           args:
+          - {{ template "helm-project-operator.name" . }}
           - --namespace={{ template "helm-project-operator.namespace" . }}
+          - --helm-job-image={{ template "system_default_registry" . }}{{ .Values.helmcontroller.job.image.repository }}:{{ .Values.helmcontroller.job.image.tag }}
 {{- if .Values.global.cattle.projectLabel }}
           - --project-label={{ .Values.global.cattle.projectLabel }}
 {{- end }}

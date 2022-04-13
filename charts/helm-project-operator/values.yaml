@@ -33,9 +33,15 @@ nameOverride: ""
 namespaceOverride: ""
 
 image:
-  repository: aiyengar2/helm-project-operator
-  tag: v0.0.1
-  pullPolicy: IfNotPresent
+  repository: arvindiyengar/helm-project-operator # TODO: modify to rancher/helm-project-operator
+  tag: dev
+  pullPolicy: Always # TODO: modify to IfNotPresent
+
+helmcontroller:
+  job:
+    image:
+      repository: rancher/klipper-helm
+      tag: v0.7.0-build20220315
 
 # Additional arguments to be passed into the Helm Project Operator image
 additionalArgs: []
