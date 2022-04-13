@@ -333,7 +333,7 @@ func (h *handler) getReleaseNamespaceAndName(projectHelmChart *v1alpha1.ProjectH
 	// ProjectHelmCharts will be in dedicated project registration namespaces in the designated Project
 	// HelmCharts and HelmReleases will be in the systemNamespace
 	// Helm deployments will go to dedicated project release namespaces in the System project
-	// Solution: we can just use h.opts.ReleaseName since there will only ever be one deployment per dedicated project release namespace
+	// Solution: use the name of the dedicateed project release namespace as the differentiator for each HelmChart and HelmRelease
 	projectReleaseNamespaceName := fmt.Sprintf("%s-%s", projectHelmChart.Namespace, h.opts.ReleaseName)
-	return projectReleaseNamespaceName, h.opts.ReleaseName
+	return projectReleaseNamespaceName, projectReleaseNamespaceName
 }
