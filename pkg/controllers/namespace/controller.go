@@ -193,9 +193,53 @@ func (h *handler) enqueueProjectNamespaces(projectRegistrationNamespace *v1.Name
 	return nil
 }
 
+func (h *handler) updateNamespaceWithHelmOperatorProjectLabel(namespace *v1.Namespace, projectID string, inProject bool) error {
+	if namespace.DeletionTimestamp != nil {
+		// no need to update a namespace about to be deleted
+		return nil
+	}
+	if len(h.systemProjectLabelValue) == 0 {
+		// do nothing, this annotation is irrelevant unless we create release namespaces
+		return nil
+	}
+	if len(projectID) == 0 || !inProject {
+		// ensure that the HelmProjectOperatorProjectLabel is removed if added
+		if namespace.Labels == nil {
+			return nil
+		}
+		if _, ok := namespace.Labels[common.HelmProjectOperatorProjectLabel]; !ok {
+			return nil
+		}
+		namespaceCopy := namespace.DeepCopy()
+		delete(namespaceCopy.Labels, common.HelmProjectOperatorProjectLabel)
+		_, err := h.namespaces.Update(namespaceCopy)
+		if err != nil {
+			return err
+		}
+	}
+
+	namespaceCopy := namespace.DeepCopy()
+	if namespaceCopy.Labels == nil {
+		namespaceCopy.Labels = map[string]string{}
+	}
+	currLabel, ok := namespaceCopy.Labels[common.HelmProjectOperatorProjectLabel]
+	if !ok || currLabel != projectID {
+		namespaceCopy.Labels[common.HelmProjectOperatorProjectLabel] = projectID
+	}
+	_, err := h.namespaces.Update(namespaceCopy)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Namespace) error {
 	// get the project ID and generate the namespace object to be applied
 	projectID, inProject := h.getProjectIDFromNamespaceLabels(namespace)
+	err := h.updateNamespaceWithHelmOperatorProjectLabel(namespace, projectID, inProject)
+	if err != nil {
+		return nil
+	}
 	if !inProject {
 		return nil
 	}

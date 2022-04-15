@@ -12,6 +12,8 @@ data:
 {{ .Values.global.cattle.projectID | toYaml | indent 4 }}
   system-project-id: |-
 {{ .Values.global.cattle.systemProjectID | toYaml | indent 4 }}
+  project-namespace-selector: |-
+{{ .Values.global.cattle.projectNamespaceSelector | toYaml | indent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -27,3 +29,5 @@ data:
 {{ .Values.global.cattle.projectID | toYaml | indent 4 }}
   system-project-id: |-
 {{ .Values.global.cattle.systemProjectID | toYaml | indent 4 }}
+  project-namespace-selector: |-
+{{ .Values.global.cattle.projectNamespaceSelector | toYaml | indent 4 }}

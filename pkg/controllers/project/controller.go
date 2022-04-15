@@ -180,9 +180,10 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	values := v1alpha1.GenericMap(data.MergeMaps(projectHelmChart.Spec.Values, map[string]interface{}{
 		"global": map[string]interface{}{
 			"cattle": map[string]interface{}{
-				"projectNamespaces": targetProjectNamespaces,
-				"projectID":         projectID,
-				"systemProjectID":   h.opts.SystemProjectLabelValue,
+				"projectNamespaces":        targetProjectNamespaces,
+				"projectID":                projectID,
+				"systemProjectID":          h.opts.SystemProjectLabelValue,
+				"projectNamespaceSelector": h.getProjectNamespaceSelector(projectHelmChart, projectID),
 			},
 		},
 	}))
@@ -336,4 +337,31 @@ func (h *handler) getReleaseNamespaceAndName(projectHelmChart *v1alpha1.ProjectH
 	// Solution: use the name of the dedicateed project release namespace as the differentiator for each HelmChart and HelmRelease
 	projectReleaseNamespaceName := fmt.Sprintf("%s-%s", projectHelmChart.Namespace, h.opts.ReleaseName)
 	return projectReleaseNamespaceName, projectReleaseNamespaceName
+}
+
+func (h *handler) getProjectNamespaceSelector(projectHelmChart *v1alpha1.ProjectHelmChart, projectID string) map[string]interface{} {
+	if len(h.opts.ProjectLabel) == 0 {
+		// Use the projectHelmChart selector as the namespaceSelector
+		if projectHelmChart.Spec.ProjectNamespaceSelector == nil {
+			return map[string]interface{}{}
+		}
+		return map[string]interface{}{
+			"matchLabels":      projectHelmChart.Spec.ProjectNamespaceSelector.MatchLabels,
+			"matchExpressions": projectHelmChart.Spec.ProjectNamespaceSelector.MatchExpressions,
+		}
+	}
+	if len(h.opts.SystemProjectLabelValue) == 0 {
+		// Release namespace is not created, so use namespaceSelector provided tied to projectID
+		return map[string]interface{}{
+			"matchLabels": map[string]string{
+				h.opts.ProjectLabel: projectID,
+			},
+		}
+	}
+	// use the HelmProjectOperated label
+	return map[string]interface{}{
+		"matchLabels": map[string]string{
+			common.HelmProjectOperatorProjectLabel: projectID,
+		},
+	}
 }

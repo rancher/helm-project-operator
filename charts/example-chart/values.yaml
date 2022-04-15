@@ -3,6 +3,7 @@ global:
     projectID: ""
     systemProjectID: ""
     projectNamespaces: []
+    projectNamespaceSelector: {}
 
 data:
   hello: world
