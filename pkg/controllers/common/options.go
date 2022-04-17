@@ -19,6 +19,9 @@ type Options struct {
 
 	HelmJobImage string
 	NodeName     string
+
+	SystemDefaultRegistry string
+	CattleURL             string
 }
 
 func (opts Options) Validate() error {

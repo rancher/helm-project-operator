@@ -177,16 +177,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 		projectHelmChartStatus.ProjectNamespaces = targetProjectNamespaces
 	}
 
-	values := v1alpha1.GenericMap(data.MergeMaps(projectHelmChart.Spec.Values, map[string]interface{}{
-		"global": map[string]interface{}{
-			"cattle": map[string]interface{}{
-				"projectNamespaces":        targetProjectNamespaces,
-				"projectID":                projectID,
-				"systemProjectID":          h.opts.SystemProjectLabelValue,
-				"projectNamespaceSelector": h.getProjectNamespaceSelector(projectHelmChart, projectID),
-			},
-		},
-	}))
+	values := h.getValues(projectHelmChart, projectID, targetProjectNamespaces)
 	valuesContentBytes, err := values.ToYAML()
 	if err != nil {
 		return nil, projectHelmChartStatus, fmt.Errorf("unable to marshall spec.values of %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Name, err)
@@ -364,4 +355,36 @@ func (h *handler) getProjectNamespaceSelector(projectHelmChart *v1alpha1.Project
 			common.HelmProjectOperatorProjectLabel: projectID,
 		},
 	}
+}
+
+func (h *handler) getValues(projectHelmChart *v1alpha1.ProjectHelmChart, projectID string, targetProjectNamespaces []string) v1alpha1.GenericMap {
+	// default values that are set if the user does not provide them
+	values := map[string]interface{}{
+		"global": map[string]interface{}{
+			"cattle": map[string]interface{}{
+				"systemDefaultRegistry": h.opts.SystemDefaultRegistry,
+				"url":                   h.opts.CattleURL,
+			},
+		},
+	}
+
+	// overlay provided values, which will override the above values if provided
+	values = data.MergeMaps(values, projectHelmChart.Spec.Values)
+
+	// required project-basd values that must be set even if user tries to override them
+	requiredOverrides := map[string]interface{}{
+		"global": map[string]interface{}{
+			"cattle": map[string]interface{}{
+				"clusterId":                h.opts.ClusterID,
+				"projectNamespaces":        targetProjectNamespaces,
+				"projectID":                projectID,
+				"systemProjectID":          h.opts.SystemProjectLabelValue,
+				"projectNamespaceSelector": h.getProjectNamespaceSelector(projectHelmChart, projectID),
+			},
+		},
+	}
+	// overlay required values, which will override the above values even if provided
+	values = data.MergeMaps(values, requiredOverrides)
+
+	return values
 }

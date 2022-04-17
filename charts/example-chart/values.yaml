@@ -1,9 +1,12 @@
 global:
   cattle:
+    clusterID: ""
     projectID: ""
-    systemProjectID: ""
     projectNamespaces: []
     projectNamespaceSelector: {}
+    systemDefaultRegistry: ""
+    systemProjectID: ""
+    url: ""
 
 data:
   hello: world

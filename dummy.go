@@ -57,6 +57,8 @@ func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 		// These fields are provided on runtime for all project operators
 		ProjectLabel:            o.ProjectLabel,
 		SystemProjectLabelValue: o.SystemProjectLabelValue,
+		SystemDefaultRegistry:   o.SystemDefaultRegistry,
+		CattleURL:               o.CattleURL,
 		ClusterID:               o.ClusterID,
 		NodeName:                o.NodeName,
 	}); err != nil {

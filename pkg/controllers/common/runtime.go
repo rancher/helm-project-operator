@@ -19,6 +19,13 @@ type RuntimeOptions struct {
 	// Note: primarily used for integration with Rancher Projects
 	ClusterID string `usage:"Identifies the cluster this controller is running on. Ignored if --project-label is not provided." env:"CLUSTER_ID"`
 
+	// SystemDefaultRegistry is the prefix to be added to all images deployed by the HelmChart embedded into the Project Operator
+	// to point at the right set of images that need to be deployed. This is usually provided in Rancher as global.cattle.systemDefaultRegistry
+	SystemDefaultRegistry string `usage:"Default system registry to use for Docker images deployed by underlying Helm Chart. Provided as global.cattle.systemDefaultRegistry in the Helm Chart" env:"SYSTEM_DEFAULT_REGISTRY"`
+
+	// CattleURL is the Rancher URL that this chart has been deployed onto. This is usually provided in Rancher Helm charts as global.cattle.url
+	CattleURL string `usage:"Default Rancher URL to provide to the Helm chart under global.cattle.url" env:"CATTLE_URL"`
+
 	// ProjectLabel is the label that identifies projects
 	// Note: this field is optional and ensures that ProjectHelmCharts auto-infer their spec.projectNamespaceSelector
 	// If provided, any spec.projectNamespaceSelector provided will be ignored
