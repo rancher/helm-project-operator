@@ -21,33 +21,36 @@ spec:
         runAsUser: 0
       initContainers:
         - name: add-cleanup-annotations
-          image: {{ template "system_default_registry" . }}{{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ template "system_default_registry" . }}{{ .Values.cleanup.image.repository }}:{{ .Values.cleanup.image.tag }}
           imagePullPolicy: IfNotPresent
           command:
           - /bin/sh
           - -c
           - >
-            echo "Labeling all ProjectHelmCharts with helm.cattle.io/helm-project-operator-cleanup=true"
-            kubectl label projecthelmcharts helm.cattle.io/helm-project-operator-cleanup=true --all --all-namespaces --overwrite
+            echo "Labeling all ProjectHelmCharts with helm.cattle.io/helm-project-operator-cleanup=true";
+            for namespace in $(kubectl get namespaces -l helm.cattle.io/helm-project-operated=true --no-headers -o=custom-columns=NAME:.metadata.name); do
+              kubectl label projecthelmcharts -n ${namespace} helm.cattle.io/helm-project-operator-cleanup=true --all --overwrite;
+            done;
       containers:
-        - name: delete-crds
-          image: {{ template "system_default_registry" . }}{{ .Values.image.repository }}:{{ .Values.image.tag }}
+        - name: ensure-subresources-deleted
+          image: {{ template "system_default_registry" . }}{{ .Values.cleanup.image.repository }}:{{ .Values.cleanup.image.tag }}
           imagePullPolicy: IfNotPresent
           command:
           - /bin/sh
           - -c
           - >
             echo "Ensuring HelmCharts and HelmReleases are deleted from {{ .Release.Namespace }}...";
-            while [[ $(kubectl get helmcharts,helmreleases -n {{ .Release.Namespace }} 2>&1) != "No resources found in {{ .Release.Namespace }} namespace." ]]; do
+            while [[ "$(kubectl get helmcharts,helmreleases -n {{ .Release.Namespace }} 2>&1)" != "No resources found in {{ .Release.Namespace }} namespace." ]]; do
               echo "waiting for HelmCharts and HelmReleases to be deleted from {{ .Release.Namespace }}... sleeping 3 seconds";
-              sleep 3
-            done
+              sleep 3;
+            done;
+            echo "Successfully deleted all HelmCharts and HelmReleases in {{ .Release.Namespace }}!"
       restartPolicy: OnFailure
       nodeSelector: {{ include "linux-node-selector" . | nindent 8 }}
-      {{- if .Values.nodeSelector }}
-      {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- if .Values.cleanup.nodeSelector }}
+      {{- toYaml .Values.cleanup.nodeSelector | nindent 8 }}
       {{- end }}
       tolerations: {{ include "linux-node-tolerations" . | nindent 8 }}
-      {{- if .Values.tolerations }}
-      {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- if .Values.cleanup.tolerations }}
+      {{- toYaml .Values.cleanup.tolerations | nindent 8 }}
       {{- end }}

@@ -89,9 +89,18 @@ func Register(
 
 	namespaceCache.AddIndexer(NamespacesByProjectID, h.namespaceToProjectID)
 
-	namespaceList, err := namespaces.List(metav1.ListOptions{})
+	err := h.initProjectRegistrationNamespaces()
 	if err != nil {
-		logrus.Panicf("unable to list namespaces to enqueue all Helm charts")
+		logrus.Fatal(err)
+	}
+
+	return NewLabelBasedProjectGetter(projectLabel, h.isProjectRegistrationNamespace, h.isSystemNamespace, namespaces)
+}
+
+func (h *handler) initProjectRegistrationNamespaces() error {
+	namespaceList, err := h.namespaces.List(metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("unable to list namespaces to enqueue all Helm charts: %s", err)
 	}
 	if namespaceList != nil {
 		logrus.Infof("Identifying and registering projectRegistrationNamespaces...")
@@ -111,12 +120,11 @@ func Register(
 			if err != nil {
 				// encountered some error, just fail to start
 				// Possible TODO: Perhaps we should add a backoff retry here?
-				logrus.Fatalf("unable to initialize projectRegistrationNamespaces before starting other handlers that utilize ProjectGetter: %s", err)
+				return fmt.Errorf("unable to initialize projectRegistrationNamespaces before starting other handlers that utilize ProjectGetter: %s", err)
 			}
 		}
 	}
-
-	return NewLabelBasedProjectGetter(projectLabel, h.isProjectRegistrationNamespace, h.isSystemNamespace, namespaces)
+	return nil
 }
 
 func (h *handler) namespaceToProjectID(namespace *v1.Namespace) ([]string, error) {

@@ -18,6 +18,7 @@ import (
 	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/relatedresource"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +37,7 @@ type handler struct {
 	projectHelmChartCache helmproject.ProjectHelmChartCache
 	helmCharts            helm.HelmChartController
 	helmReleases          helmlocker.HelmReleaseController
+	namespaces            corecontrollers.NamespaceController
 	namespaceCache        corecontrollers.NamespaceCache
 	projectGetter         namespace.ProjectGetter
 }
@@ -70,6 +72,7 @@ func Register(
 		projectHelmChartCache: projectHelmChartCache,
 		helmCharts:            helmCharts,
 		helmReleases:          helmReleases,
+		namespaces:            namespaces,
 		namespaceCache:        namespaceCache,
 		projectGetter:         projectGetter,
 	}
@@ -87,6 +90,48 @@ func Register(
 	projectHelmCharts.OnRemove(ctx, "remove-project-helm-chart", h.OnRemove)
 
 	relatedresource.Watch(ctx, "sync-helm-resources", h.resolveProjectHelmChartOwned, projectHelmCharts, helmCharts, helmReleases)
+
+	err := h.removeCleanupLabelsFromProjectHelmCharts()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+func (h *handler) removeCleanupLabelsFromProjectHelmCharts() error {
+	namespaceList, err := h.namespaces.List(metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("unable to list namespaces to remove cleanup label from all ProjectHelmCharts")
+	}
+	if namespaceList == nil {
+		return nil
+	}
+	logrus.Infof("Removing cleanup label from all registered ProjectHelmCharts...")
+	// ensure all ProjectHelmCharts in every namespace no longer have the cleanup label on them
+	for _, ns := range namespaceList.Items {
+		projectHelmChartList, err := h.projectHelmCharts.List(ns.Name, metav1.ListOptions{})
+		if err != nil {
+			return fmt.Errorf("unable to list ProjectHelmCharts in namespace %s to remove cleanup label", ns.Name)
+		}
+		if projectHelmChartList == nil {
+			continue
+		}
+		for _, projectHelmChart := range projectHelmChartList.Items {
+			if projectHelmChart.Labels == nil {
+				continue
+			}
+			_, ok := projectHelmChart.Labels[common.HelmProjectOperatedCleanupLabel]
+			if !ok {
+				continue
+			}
+			projectHelmChartCopy := projectHelmChart.DeepCopy()
+			delete(projectHelmChartCopy.Labels, common.HelmProjectOperatedCleanupLabel)
+			_, err := h.projectHelmCharts.Update(projectHelmChartCopy)
+			if err != nil {
+				return fmt.Errorf("unable to remove cleanup label from ProjectHelmCharts %s/%s", projectHelmChart.Namespace, projectHelmChart.Name)
+			}
+		}
+	}
+	return nil
 }
 
 func (h *handler) resolveProjectHelmChartOwned(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
@@ -138,6 +183,23 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	if projectHelmChart.Spec.HelmApiVersion != h.opts.HelmApiVersion {
 		// only watch resources with the HelmAPIVersion this controller was configured with
 		return nil, projectHelmChartStatus, nil
+	}
+	if projectHelmChart.Labels != nil {
+		_, ok := projectHelmChart.Labels[common.HelmProjectOperatedCleanupLabel]
+		if ok {
+			// allow cleanup to happen
+			logrus.Infof("Cleaning up HelmChart and HelmRelease for ProjectHelmChart %s/%s", projectHelmChart.Namespace, projectHelmChart.Name)
+			projectHelmChartStatus.ProjectHelmChartStatus = "AwaitingOperatorRedeployment"
+			projectHelmChartStatus.ProjectHelmChartStatusMessage = fmt.Sprintf(
+				"ProjectHelmChart was marked with label %s=true, which indicates that the resource should be cleaned up "+
+					"until the Project Operator that responds to ProjectHelmCharts in %s with spec.helmApiVersion=%s"+
+					"is redeployed onto the cluster. On redeployment, this label will automatically be removed by the operator.",
+				common.HelmProjectOperatedCleanupLabel, projectHelmChart.Namespace, projectHelmChart.Spec.HelmApiVersion)
+			projectHelmChartStatus.ProjectNamespaces = nil
+			projectHelmChartStatus.ProjectSystemNamespace = ""
+			projectHelmChartStatus.ProjectReleaseNamespace = ""
+			return nil, projectHelmChartStatus, nil
+		}
 	}
 
 	projectID, err := h.getProjectID(projectHelmChart)
