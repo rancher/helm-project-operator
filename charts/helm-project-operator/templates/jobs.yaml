@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "helm-project-operator.name" . }}-cleanup
+  namespace: {{ template "helm-project-operator.namespace" . }}
+  labels: {{ include "helm-project-operator.labels" . | nindent 4 }}
+    app: {{ template "helm-project-operator.name" . }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": before-hook-creation, hook-succeeded, hook-failed
+spec:
+  template:
+    metadata:
+      name: {{ template "helm-project-operator.name" . }}-cleanup
+      labels: {{ include "helm-project-operator.labels" . | nindent 8 }}
+        app: {{ template "helm-project-operator.name" . }}
+    spec:
+      serviceAccountName: {{ template "helm-project-operator.name" . }}
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+      initContainers:
+        - name: add-cleanup-annotations
+          image: {{ template "system_default_registry" . }}{{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: IfNotPresent
+          command:
+          - /bin/sh
+          - -c
+          - >
+            echo "Labeling all ProjectHelmCharts with helm.cattle.io/helm-project-operator-cleanup=true"
+            kubectl label projecthelmcharts helm.cattle.io/helm-project-operator-cleanup=true --all --all-namespaces --overwrite
+      containers:
+        - name: delete-crds
+          image: {{ template "system_default_registry" . }}{{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: IfNotPresent
+          command:
+          - /bin/sh
+          - -c
+          - >
+            echo "Ensuring HelmCharts and HelmReleases are deleted from {{ .Release.Namespace }}...";
+            while [[ $(kubectl get helmcharts,helmreleases -n {{ .Release.Namespace }} 2>&1) != "No resources found in {{ .Release.Namespace }} namespace." ]]; do
+              echo "waiting for HelmCharts and HelmReleases to be deleted from {{ .Release.Namespace }}... sleeping 3 seconds";
+              sleep 3
+            done
+      restartPolicy: OnFailure
+      nodeSelector: {{ include "linux-node-selector" . | nindent 8 }}
+      {{- if .Values.nodeSelector }}
+      {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      tolerations: {{ include "linux-node-tolerations" . | nindent 8 }}
+      {{- if .Values.tolerations }}
+      {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
