@@ -169,12 +169,10 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 	// must acquire all locks in order to start controllers
 	leader.RunOrDie(ctx, systemNamespace, "helm-controller-lock", appCtx.K8s, func(ctx context.Context) {
 		leader.RunOrDie(ctx, systemNamespace, "helm-locker-lock", appCtx.K8s, func(ctx context.Context) {
-			leader.RunOrDie(ctx, systemNamespace, "helm-project-operator-lock", appCtx.K8s, func(ctx context.Context) {
-				if err := appCtx.start(ctx); err != nil {
-					logrus.Fatal(err)
-				}
-				logrus.Info("All controllers have been started")
-			})
+			if err := appCtx.start(ctx); err != nil {
+				logrus.Fatal(err)
+			}
+			logrus.Info("All controllers have been started")
 		})
 	})
 
