@@ -16,6 +16,9 @@ const (
 	// on the generated namespace, this label needs to be added to create a consistent set of labels for global.cattle.projectNamespaceSelector
 	// to be able to target
 	HelmProjectOperatorProjectLabel = "helm.cattle.io/projectId"
+	// HelmProjectOperatorDashboardValuesConfigMapLabel is a label that identifies a ConfigMap that should be merged into status.dashboardValues when available
+	// The value of this label will be the release name of the Helm chart, which will be used to identify which ProjectHelmChart's status needs to be updated.
+	HelmProjectOperatorDashboardValuesConfigMapLabel = "helm.cattle.io/dashboard-values-configmap"
 	// ProjectRegistrationNamespaceFmt is the format used in order to create project registration namespaces if ProjectLabel is provided
 	// If SystemProjectLabel is also provided, the project release namespace will be this namespace with `-<ReleaseName>` suffixed, where
 	// ReleaseName is provided by the Project Operator that implements Helm Project Operator

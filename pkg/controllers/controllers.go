@@ -136,6 +136,7 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.HelmLocker.HelmRelease(),
 		appCtx.Core.Namespace(),
 		appCtx.Core.Namespace().Cache(),
+		appCtx.Core.ConfigMap(),
 		projectGetter,
 	)
 

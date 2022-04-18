@@ -2,7 +2,9 @@ package project
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	helmlockerapi "github.com/aiyengar2/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
 	helmlocker "github.com/aiyengar2/helm-locker/pkg/generated/controllers/helm.cattle.io/v1alpha1"
@@ -25,6 +27,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+const (
+	ProjectHelmChartByReleaseName = "helm.cattle.io/project-helm-chart-by-release-name"
+)
+
 var (
 	DefaultJobImage = chart.DefaultJobImage
 )
@@ -39,6 +45,7 @@ type handler struct {
 	helmReleases          helmlocker.HelmReleaseController
 	namespaces            corecontrollers.NamespaceController
 	namespaceCache        corecontrollers.NamespaceCache
+	configmaps            corecontrollers.ConfigMapController
 	projectGetter         namespace.ProjectGetter
 }
 
@@ -53,6 +60,7 @@ func Register(
 	helmReleases helmlocker.HelmReleaseController,
 	namespaces corecontrollers.NamespaceController,
 	namespaceCache corecontrollers.NamespaceCache,
+	configmaps corecontrollers.ConfigMapController,
 	projectGetter namespace.ProjectGetter,
 ) {
 
@@ -74,6 +82,7 @@ func Register(
 		helmReleases:          helmReleases,
 		namespaces:            namespaces,
 		namespaceCache:        namespaceCache,
+		configmaps:            configmaps,
 		projectGetter:         projectGetter,
 	}
 
@@ -90,6 +99,10 @@ func Register(
 	projectHelmCharts.OnRemove(ctx, "remove-project-helm-chart", h.OnRemove)
 
 	relatedresource.Watch(ctx, "sync-helm-resources", h.resolveProjectHelmChartOwned, projectHelmCharts, helmCharts, helmReleases)
+
+	projectHelmChartCache.AddIndexer(ProjectHelmChartByReleaseName, h.projectHelmChartToReleaseName)
+
+	relatedresource.Watch(ctx, "sync-status-configmaps", h.resolveProjectHelmChartStatusChange, projectHelmCharts, configmaps)
 
 	err := h.removeCleanupLabelsFromProjectHelmCharts()
 	if err != nil {
@@ -134,6 +147,11 @@ func (h *handler) removeCleanupLabelsFromProjectHelmCharts() error {
 	return nil
 }
 
+func (h *handler) projectHelmChartToReleaseName(projectHelmChart *v1alpha1.ProjectHelmChart) ([]string, error) {
+	_, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
+	return []string{releaseName}, nil
+}
+
 func (h *handler) resolveProjectHelmChartOwned(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
 	if namespace != h.systemNamespace {
 		// only watching HelmCharts and HelmReleases in the system namespace
@@ -163,6 +181,35 @@ func (h *handler) resolveProjectHelmChartOwned(namespace, name string, obj runti
 		Namespace: ownerNamespace,
 		Name:      ownerName,
 	}}, nil
+}
+
+func (h *handler) resolveProjectHelmChartStatusChange(_, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	if obj == nil {
+		return nil, nil
+	}
+	meta, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, err
+	}
+	releaseName, ok := meta.GetLabels()[common.HelmProjectOperatorDashboardValuesConfigMapLabel]
+	if !ok {
+		return nil, nil
+	}
+	projectHelmCharts, err := h.projectHelmChartCache.GetByIndex(ProjectHelmChartByReleaseName, releaseName)
+	if err != nil {
+		return nil, err
+	}
+	var keys []relatedresource.Key
+	for _, projectHelmChart := range projectHelmCharts {
+		if projectHelmChart == nil {
+			continue
+		}
+		keys = append(keys, relatedresource.Key{
+			Namespace: projectHelmChart.Namespace,
+			Name:      projectHelmChart.Name,
+		})
+	}
+	return keys, nil
 }
 
 func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) ([]runtime.Object, v1alpha1.ProjectHelmChartStatus, error) {
@@ -198,6 +245,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 			projectHelmChartStatus.ProjectNamespaces = nil
 			projectHelmChartStatus.ProjectSystemNamespace = ""
 			projectHelmChartStatus.ProjectReleaseNamespace = ""
+			projectHelmChartStatus.DashboardValues = nil
 			return nil, projectHelmChartStatus, nil
 		}
 	}
@@ -219,6 +267,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 		projectHelmChartStatus.ProjectNamespaces = nil
 		projectHelmChartStatus.ProjectSystemNamespace = ""
 		projectHelmChartStatus.ProjectReleaseNamespace = ""
+		projectHelmChartStatus.DashboardValues = nil
 		var objs []runtime.Object
 		if projectReleaseNamespace != nil {
 			// always patch the projectReleaseNamespace to orphaned if it exists
@@ -237,6 +286,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 			projectHelmChartStatus.ProjectReleaseNamespace = projectReleaseNamespace.Name
 		}
 		projectHelmChartStatus.ProjectNamespaces = targetProjectNamespaces
+		projectHelmChartStatus.DashboardValues = nil
 	}
 
 	values := h.getValues(projectHelmChart, projectID, targetProjectNamespaces)
@@ -247,6 +297,10 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 
 	projectHelmChartStatus.ProjectHelmChartStatus = "Validated"
 	projectHelmChartStatus.ProjectHelmChartStatusMessage = "ProjectHelmChart has valid values and target namespaces. HelmChart and HelmRelease should be deployed."
+	projectHelmChartStatus.DashboardValues, err = h.getStatusFromConfigmaps(projectHelmChart)
+	if err != nil {
+		return nil, projectHelmChartStatus, err
+	}
 
 	var objs []runtime.Object
 	if projectReleaseNamespace != nil {
@@ -376,13 +430,13 @@ func (h *handler) getReleaseNamespaceAndName(projectHelmChart *v1alpha1.ProjectH
 	if len(h.opts.ProjectLabel) == 0 {
 		// HelmCharts, HelmReleases, and ProjectHelmCharts will be in the same namespace and project release namespaces are not created
 		// Solution: use the projectHelmChart name as the differentiator per release
-		return h.systemNamespace, fmt.Sprintf("%s/%s", projectHelmChart.Name, h.opts.ReleaseName)
+		return h.systemNamespace, fmt.Sprintf("%s-%s", projectHelmChart.Name, h.opts.ReleaseName)
 	}
 	if len(h.opts.SystemProjectLabelValue) == 0 {
 		// ProjectLabel exists, which means that we are creating ProjectHelmCharts in different namespaces that HelmCharts or HelmReleases
 		// However, project release namespaces are not created, so all Helm chart deployments will be in the system namespace
 		// Solution: use projectHelmChart namespace as the differentiator per release
-		return h.systemNamespace, fmt.Sprintf("%s/%s", projectHelmChart.Namespace, h.opts.ReleaseName)
+		return h.systemNamespace, fmt.Sprintf("%s-%s", projectHelmChart.Namespace, h.opts.ReleaseName)
 	}
 	// ProjectHelmCharts will be in dedicated project registration namespaces in the designated Project
 	// HelmCharts and HelmReleases will be in the systemNamespace
@@ -449,4 +503,34 @@ func (h *handler) getValues(projectHelmChart *v1alpha1.ProjectHelmChart, project
 	values = data.MergeMaps(values, requiredOverrides)
 
 	return values
+}
+
+func (h *handler) getStatusFromConfigmaps(projectHelmChart *v1alpha1.ProjectHelmChart) (v1alpha1.GenericMap, error) {
+	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
+	configMapList, err := h.configmaps.List(releaseNamespace, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", common.HelmProjectOperatorDashboardValuesConfigMapLabel, releaseName),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if configMapList == nil {
+		return nil, nil
+	}
+	var values v1alpha1.GenericMap
+	for _, configMap := range configMapList.Items {
+		for jsonKey, jsonContent := range configMap.Data {
+			if !strings.HasSuffix(jsonKey, ".json") {
+				logrus.Errorf("dashboard values configmap %s/%s has non-JSON key %s, expected only keys ending with .json. skipping...", configMap.Namespace, configMap.Name, jsonKey)
+				continue
+			}
+			var jsonMap map[string]interface{}
+			err := json.Unmarshal([]byte(jsonContent), &jsonMap)
+			if err != nil {
+				logrus.Errorf("could not marshall content in dashboard values configmap %s/%s in key %s (err='%s'). skipping...", configMap.Namespace, configMap.Name, jsonKey, err)
+				continue
+			}
+			values = data.MergeMapsConcatSlice(values, jsonMap)
+		}
+	}
+	return values, nil
 }
