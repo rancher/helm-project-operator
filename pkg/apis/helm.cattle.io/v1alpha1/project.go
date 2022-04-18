@@ -21,7 +21,6 @@ type ProjectHelmChartSpec struct {
 }
 
 type ProjectHelmChartStatus struct {
-	RancherValues   GenericMap `json:"rancherValues"`
 	DashboardValues GenericMap `json:"dashboardValues"`
 
 	ProjectHelmChartStatus        string `json:"projectHelmChartStatus"`
