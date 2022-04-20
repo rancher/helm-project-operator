@@ -28,8 +28,19 @@ spec:
           - -c
           - >
             echo "Labeling all ProjectHelmCharts with helm.cattle.io/helm-project-operator-cleanup=true";
+            EXPECTED_HELM_API_VERSION={{ .Values.helmApiVersion }};
+            IFS=$'\n';
             for namespace in $(kubectl get namespaces -l helm.cattle.io/helm-project-operated=true --no-headers -o=custom-columns=NAME:.metadata.name); do
-              kubectl label projecthelmcharts -n ${namespace} helm.cattle.io/helm-project-operator-cleanup=true --all --overwrite;
+              for projectHelmChartAndHelmApiVersion in $(kubectl get projecthelmcharts -n ${namespace} --no-headers -o=custom-columns=NAME:.metadata.name,HELMAPIVERSION:.spec.helmApiVersion); do
+                projectHelmChartAndHelmApiVersion=$(echo ${projectHelmChartAndHelmApiVersion} | xargs);
+                projectHelmChart=$(echo ${projectHelmChartAndHelmApiVersion} | cut -d' ' -f1);
+                helmApiVersion=$(echo ${projectHelmChartAndHelmApiVersion} | cut -d' ' -f2);
+                if [[ ${helmApiVersion} != ${EXPECTED_HELM_API_VERSION} ]]; then
+                  echo "Skipping marking ${namespace}/${projectHelmChart} with cleanup annotation since spec.helmApiVersion: ${helmApiVersion} is not ${EXPECTED_HELM_API_VERSION}";
+                  continue;
+                fi;
+                kubectl label projecthelmcharts -n ${namespace} ${projectHelmChart} helm.cattle.io/helm-project-operator-cleanup=true --overwrite;
+              done;
             done;
       containers:
         - name: ensure-subresources-deleted
