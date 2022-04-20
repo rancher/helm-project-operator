@@ -407,7 +407,8 @@ func (h *handler) getProjectReleaseNamespace(projectID string, projectHelmChart 
 
 func getLabels(projectHelmChart *v1alpha1.ProjectHelmChart) map[string]string {
 	return map[string]string{
-		common.HelmProjectOperatedLabel: "true",
+		common.HelmProjectOperatedLabel:               "true",
+		common.HelmProjectOperatorHelmApiVersionLabel: strings.SplitN(projectHelmChart.Spec.HelmApiVersion, "/", 2)[0],
 	}
 }
 

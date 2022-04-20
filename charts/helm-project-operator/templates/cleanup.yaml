@@ -50,12 +50,15 @@ spec:
           - /bin/sh
           - -c
           - >
-            echo "Ensuring HelmCharts and HelmReleases are deleted from {{ .Release.Namespace }}...";
-            while [[ "$(kubectl get helmcharts,helmreleases -n {{ .Release.Namespace }} 2>&1)" != "No resources found in {{ .Release.Namespace }} namespace." ]]; do
-              echo "waiting for HelmCharts and HelmReleases to be deleted from {{ .Release.Namespace }}... sleeping 3 seconds";
+            SYSTEM_NAMESPACE={{ .Release.Namespace }}
+            EXPECTED_HELM_API_VERSION={{ .Values.helmApiVersion }};
+            HELM_API_VERSION_TRUNCATED=$(echo ${EXPECTED_HELM_API_VERSION} | cut -d'/' -f0);
+            echo "Ensuring HelmCharts and HelmReleases are deleted from ${SYSTEM_NAMESPACE}...";
+            while [[ "$(kubectl get helmcharts,helmreleases -l helm.cattle.io/helm-api-version=${HELM_API_VERSION_TRUNCATED} -n ${SYSTEM_NAMESPACE} 2>&1)" != "No resources found in ${SYSTEM_NAMESPACE} namespace." ]]; do
+              echo "waiting for HelmCharts and HelmReleases to be deleted from ${SYSTEM_NAMESPACE}... sleeping 3 seconds";
               sleep 3;
             done;
-            echo "Successfully deleted all HelmCharts and HelmReleases in {{ .Release.Namespace }}!"
+            echo "Successfully deleted all HelmCharts and HelmReleases in ${SYSTEM_NAMESPACE}!";
       restartPolicy: OnFailure
       nodeSelector: {{ include "linux-node-selector" . | nindent 8 }}
       {{- if .Values.cleanup.nodeSelector }}

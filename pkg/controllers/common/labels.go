@@ -19,4 +19,7 @@ const (
 	// HelmProjectOperatorDashboardValuesConfigMapLabel is a label that identifies a ConfigMap that should be merged into status.dashboardValues when available
 	// The value of this label will be the release name of the Helm chart, which will be used to identify which ProjectHelmChart's status needs to be updated.
 	HelmProjectOperatorDashboardValuesConfigMapLabel = "helm.cattle.io/dashboard-values-configmap"
+	// HelmProjectOperatorHelmApiVersionLabel is a label that identifies the HelmApiVersion that a HelmChart or HelmRelease is tied to
+	// This is used to identify whether a HelmChart or HelmRelease should be deleted from the cluster on uninstall
+	HelmProjectOperatorHelmApiVersionLabel = "helm.cattle.io/helm-api-version"
 )
