@@ -3,6 +3,7 @@ package namespace
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,15 +11,20 @@ import (
 	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/pkg/apply"
 	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	"github.com/rancher/wrangler/pkg/relatedresource"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type OnNamespaceFunc func(*v1.Namespace) error
-
 type handler struct {
+	systemNamespace         string
+	helmApiVersion          string
+	valuesYaml              string
+	questionsYaml           string
 	projectLabel            string
 	systemProjectLabelValue string
 	clusterID               string
@@ -31,12 +37,11 @@ type handler struct {
 
 	namespaces            corecontrollers.NamespaceController
 	namespaceCache        corecontrollers.NamespaceCache
+	configmaps            corecontrollers.ConfigMapClient
 	projectHelmCharts     helmproject.ProjectHelmChartController
 	projectHelmChartCache helmproject.ProjectHelmChartCache
 
 	apply apply.Apply
-
-	onProjectRegistrationNamespace OnNamespaceFunc
 }
 
 const (
@@ -46,18 +51,16 @@ const (
 func Register(
 	ctx context.Context,
 	apply apply.Apply,
-	projectLabel string,
-	systemProjectLabelValue string,
-	clusterID string,
+	systemNamespace,
+	helmApiVersion, valuesYaml, questionsYaml, projectLabel, systemProjectLabelValue, clusterID string,
 	systemNamespaceList []string,
 	namespaces corecontrollers.NamespaceController,
 	namespaceCache corecontrollers.NamespaceCache,
+	configmaps corecontrollers.ConfigMapController,
 	projectHelmCharts helmproject.ProjectHelmChartController,
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
-	onProjectRegistrationNamespace OnNamespaceFunc,
 ) ProjectGetter {
 	// initialize systemNamespaceList as a map
-
 	systemNamespaces := make(map[string]bool)
 	for _, namespace := range systemNamespaceList {
 		systemNamespaces[namespace] = true
@@ -67,21 +70,34 @@ func Register(
 	// on remove, we only output a log that says that the user should clean it up and add an annotation that it is orphaned
 	apply = apply.
 		WithSetID("project-registration-namespace-applier").
-		WithCacheTypes(namespaces).
+		WithCacheTypes(namespaces, configmaps).
 		WithNoDeleteGVK(namespaces.GroupVersionKind())
 
 	h := &handler{
-		apply:                          apply,
-		projectLabel:                   projectLabel,
-		systemProjectLabelValue:        systemProjectLabelValue,
-		clusterID:                      clusterID,
-		systemNamespaces:               systemNamespaces,
-		projectRegistrationNamespaces:  make(map[string]*v1.Namespace),
-		namespaces:                     namespaces,
-		namespaceCache:                 namespaceCache,
-		projectHelmCharts:              projectHelmCharts,
-		projectHelmChartCache:          projectHelmChartCache,
-		onProjectRegistrationNamespace: onProjectRegistrationNamespace,
+		apply:                         apply,
+		systemNamespace:               systemNamespace,
+		helmApiVersion:                helmApiVersion,
+		valuesYaml:                    valuesYaml,
+		questionsYaml:                 questionsYaml,
+		projectLabel:                  projectLabel,
+		systemProjectLabelValue:       systemProjectLabelValue,
+		clusterID:                     clusterID,
+		systemNamespaces:              systemNamespaces,
+		projectRegistrationNamespaces: make(map[string]*v1.Namespace),
+		namespaces:                    namespaces,
+		namespaceCache:                namespaceCache,
+		configmaps:                    configmaps,
+		projectHelmCharts:             projectHelmCharts,
+		projectHelmChartCache:         projectHelmChartCache,
+	}
+
+	// setup watch on configmap to trigger namespace enqueue
+	relatedresource.WatchClusterScoped(ctx, "sync-namespace-data", h.resolveConfigMapToNamespace, namespaces, configmaps)
+
+	if len(projectLabel) == 0 {
+		namespaces.OnChange(ctx, "on-namespace-change", h.OnSingleNamespaceChange)
+		// no need for onremove since if that namespace gets removed all resources in it will be deleted, including ProjectHelmCharts
+		return NewSingleNamespaceProjectGetter(systemNamespace, systemNamespaceList, namespaces)
 	}
 
 	namespaces.OnChange(ctx, "on-namespace-change", h.OnChange)
@@ -96,6 +112,8 @@ func Register(
 
 	return NewLabelBasedProjectGetter(projectLabel, h.isProjectRegistrationNamespace, h.isSystemNamespace, namespaces)
 }
+
+// Multi-Namespace
 
 func (h *handler) initProjectRegistrationNamespaces() error {
 	namespaceList, err := h.namespaces.List(metav1.ListOptions{})
@@ -303,25 +321,19 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 	}
 
 	// Trigger the apply and set the projectRegistrationNamespace
-	err = h.apply.ApplyObjects(projectRegistrationNamespace)
-	if err != nil {
-		return err
-	}
-	err = h.onProjectRegistrationNamespace(projectRegistrationNamespace)
+	err = h.apply.ApplyObjects(
+		projectRegistrationNamespace, h.getConfigMap(projectRegistrationNamespace),
+	)
 	if err != nil {
 		return err
 	}
 	h.setProjectRegistrationNamespace(projectRegistrationNamespace)
 
 	// ensure that all ProjectHelmCharts are re-enqueued within this projectRegistrationNamespace
-	projectHelmCharts, err := h.projectHelmChartCache.List(projectRegistrationNamespaceName, labels.Everything())
+	err = h.enqueueProjectHelmChartsForNamespace(projectRegistrationNamespace)
 	if err != nil {
-		return fmt.Errorf("unable to re-enqueue ProjectHelmCharts on reconciling change to namespaces in project %s", projectID)
+		return fmt.Errorf("unable to re-enqueue ProjectHelmCharts on reconciling change to namespaces in project %s: %s", projectID, err)
 	}
-	for _, projectHelmChart := range projectHelmCharts {
-		h.projectHelmCharts.Enqueue(projectHelmChart.Namespace, projectHelmChart.Name)
-	}
-
 	return nil
 }
 
@@ -382,4 +394,56 @@ func (h *handler) getProjectIDFromNamespaceLabels(namespace *v1.Namespace) (stri
 	}
 	projectID, namespaceInProject := labels[h.projectLabel]
 	return projectID, namespaceInProject
+}
+
+// Single Namespace
+
+func (h *handler) resolveConfigMapToNamespace(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	// enqueue based on configMap name match
+	if name != h.getConfigMapName() {
+		return nil, nil
+	}
+	return []relatedresource.Key{{
+		Name: namespace,
+	}}, nil
+}
+
+func (h *handler) OnSingleNamespaceChange(name string, namespace *v1.Namespace) (*v1.Namespace, error) {
+	if namespace.Name != h.systemNamespace {
+		return namespace, nil
+	}
+	return namespace, h.apply.ApplyObjects(h.getConfigMap(namespace))
+}
+
+// common
+
+func (h *handler) enqueueProjectHelmChartsForNamespace(namespace *v1.Namespace) error {
+	projectHelmCharts, err := h.projectHelmChartCache.List(namespace.Name, labels.Everything())
+	if err != nil {
+		return err
+	}
+	for _, projectHelmChart := range projectHelmCharts {
+		h.projectHelmCharts.Enqueue(projectHelmChart.Namespace, projectHelmChart.Name)
+	}
+	return nil
+}
+
+func (h *handler) getConfigMap(namespace *v1.Namespace) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      h.getConfigMapName(),
+			Namespace: namespace.Name,
+			Labels: map[string]string{
+				common.HelmProjectOperatedLabel: "true",
+			},
+		},
+		Data: map[string]string{
+			"values.yaml":    h.valuesYaml,
+			"questions.yaml": h.questionsYaml,
+		},
+	}
+}
+
+func (h *handler) getConfigMapName() string {
+	return strings.ReplaceAll(h.helmApiVersion, "/", ".")
 }
