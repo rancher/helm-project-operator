@@ -34,7 +34,6 @@ import (
 	"github.com/rancher/wrangler/pkg/start"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -96,35 +95,18 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		Host:      opts.NodeName,
 	})
 
-	var projectGetter namespace.ProjectGetter
-	if len(opts.ProjectLabel) > 0 {
-		// add controllers that create dedicated project namespaces
-		projectGetter = namespace.Register(ctx,
-			appCtx.Apply,
-			opts.ProjectLabel,
-			opts.SystemProjectLabelValue,
-			opts.ClusterID,
-			opts.SystemNamespaces,
-			appCtx.Core.Namespace(),
-			appCtx.Core.Namespace().Cache(),
-			appCtx.ProjectHelmChart(),
-			appCtx.ProjectHelmChart().Cache(),
-			addChartDataWrapper(ctx, opts.HelmApiVersion, questionsYaml, valuesYaml, appCtx),
-		)
-	} else {
-		projectGetter = namespace.NewSingleNamespaceProjectGetter(
-			systemNamespace,
-			opts.SystemNamespaces,
-			appCtx.Core.Namespace(),
-		)
-		systemNamespaceObj, err := appCtx.Core.Namespace().Get(systemNamespace, v1.GetOptions{})
-		if err != nil {
-			logrus.Fatalf("unable to get systemNamespace %s", systemNamespace)
-		}
-		if err := addChartData(systemNamespaceObj, opts.HelmApiVersion, questionsYaml, valuesYaml, appCtx); err != nil {
-			logrus.Fatal(err)
-		}
-	}
+	projectGetter := namespace.Register(ctx,
+		appCtx.Apply,
+		systemNamespace,
+		valuesYaml,
+		questionsYaml,
+		opts,
+		appCtx.Core.Namespace(),
+		appCtx.Core.Namespace().Cache(),
+		appCtx.Core.ConfigMap(),
+		appCtx.ProjectHelmChart(),
+		appCtx.ProjectHelmChart().Cache(),
+	)
 
 	project.Register(ctx,
 		systemNamespace,

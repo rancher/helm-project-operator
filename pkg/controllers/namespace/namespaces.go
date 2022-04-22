@@ -33,7 +33,7 @@ func (h *handler) initProjectRegistrationNamespaces() error {
 		// will happen before this function exits, which is what we need to guarentee here.
 		// As a result, we explicitly call OnChange here to force the apply to happen and wait for it to finish
 		for _, ns := range namespaceList.Items {
-			_, err := h.OnChange(ns.Name, &ns)
+			_, err := h.OnMultiNamespaceChange(ns.Name, &ns)
 			if err != nil {
 				// encountered some error, just fail to start
 				// Possible TODO: Perhaps we should add a backoff retry here?

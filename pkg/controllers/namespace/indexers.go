@@ -6,14 +6,14 @@ import (
 )
 
 const (
-	NamespacesByProjectID = "helm.cattle.io/namespaces-by-project-id"
+	NamespacesByProjectExcludingRegistrationID = "helm.cattle.io/namespaces-by-project-id-excluding-registration"
 )
 
 func (h *handler) initIndexers() {
-	h.namespaceCache.AddIndexer(NamespacesByProjectID, h.namespaceToProjectID)
+	h.namespaceCache.AddIndexer(NamespacesByProjectExcludingRegistrationID, h.namespaceToProjectIDExcludingRegistration)
 }
 
-func (h *handler) namespaceToProjectID(namespace *v1.Namespace) ([]string, error) {
+func (h *handler) namespaceToProjectIDExcludingRegistration(namespace *v1.Namespace) ([]string, error) {
 	if h.isSystemNamespace(namespace) {
 		return nil, nil
 	}

@@ -73,6 +73,10 @@ func Register(
 		projectGetter:         projectGetter,
 	}
 
+	h.initIndexers()
+
+	h.initResolvers(ctx)
+
 	helmproject.RegisterProjectHelmChartGeneratingHandler(ctx,
 		projectHelmCharts,
 		apply,
@@ -89,10 +93,6 @@ func Register(
 		// so unless both are provided, we do not need to register this handler
 		projectHelmCharts.OnRemove(ctx, "ensure-project-release-namespace-orphaned", h.OnRemove)
 	}
-
-	h.initIndexers()
-
-	h.initResolvers(ctx)
 
 	err := h.initRemoveCleanupLabels()
 	if err != nil {
