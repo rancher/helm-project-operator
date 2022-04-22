@@ -123,8 +123,8 @@ func (in *ProjectHelmChartSpec) DeepCopy() *ProjectHelmChartSpec {
 func (in *ProjectHelmChartStatus) DeepCopyInto(out *ProjectHelmChartStatus) {
 	*out = *in
 	in.DashboardValues.DeepCopyInto(&out.DashboardValues)
-	if in.ProjectNamespaces != nil {
-		in, out := &in.ProjectNamespaces, &out.ProjectNamespaces
+	if in.TargetNamespaces != nil {
+		in, out := &in.TargetNamespaces, &out.TargetNamespaces
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

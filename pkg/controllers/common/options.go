@@ -12,6 +12,7 @@ type Options struct {
 	ReleaseName      string
 	SystemNamespaces []string
 	ChartContent     string
+	Singleton        bool
 
 	ProjectLabel            string
 	SystemProjectLabelValue string
@@ -39,6 +40,13 @@ func (opts Options) Validate() error {
 
 	if len(opts.ChartContent) == 0 {
 		return errors.New("cannot instantiate Project Operator without bundling a Helm chart to provide for the HelmChart's spec.ChartContent")
+	}
+
+	if opts.Singleton {
+		logrus.Infof("Note: Operator only supports a single ProjectHelmChart per project registration namespace")
+		if len(opts.ProjectLabel) == 0 {
+			logrus.Warnf("It is only recommended to run a singleton Project Operator when --project-label is provided (currently not set). The current configuration of this operator would only allow a single ProjectHelmChart to be managed by this Operator.")
+		}
 	}
 
 	if len(opts.ProjectLabel) > 0 {

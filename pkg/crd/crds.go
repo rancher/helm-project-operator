@@ -117,10 +117,11 @@ func List() []crd.CRD {
 	crds := []crd.CRD{
 		newCRD(&v1alpha1.ProjectHelmChart{}, func(c crd.CRD) crd.CRD {
 			return c.
-				WithColumn("Status", ".status.projectHelmChartStatus").
-				WithColumn("System Namespace", ".status.projectSystemNamespace").
-				WithColumn("Release Namespace", ".status.projectReleaseNamespace").
-				WithColumn("Namespaces", ".status.projectNamespaces")
+				WithColumn("Status", ".status.status").
+				WithColumn("System Namespace", ".status.systemNamespace").
+				WithColumn("Release Namespace", ".status.releaseNamespace").
+				WithColumn("Release Name", ".status.releaseName").
+				WithColumn("Target Namespaces", ".status.targetNamespaces")
 		}),
 	}
 	crds = append(crds, helmcontrollercrd.List()...)

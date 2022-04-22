@@ -3,7 +3,6 @@ package namespace
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
@@ -23,11 +22,8 @@ type handler struct {
 	systemProjectLabelValue string
 	clusterID               string
 
-	systemNamespaces map[string]bool
-	systemMapLock    sync.RWMutex
-
-	projectRegistrationNamespaces map[string]*v1.Namespace
-	projectRegistrationMapLock    sync.RWMutex
+	systemNamespaceRegister              NamespaceRegister
+	projectRegistrationNamespaceRegister NamespaceRegister
 
 	namespaces            corecontrollers.NamespaceController
 	namespaceCache        corecontrollers.NamespaceCache
@@ -38,10 +34,6 @@ type handler struct {
 
 	onProjectRegistrationNamespace OnNamespaceFunc
 }
-
-const (
-	NamespacesByProjectID = "helm.cattle.io/namespaces-by-project-id"
-)
 
 func Register(
 	ctx context.Context,
@@ -56,13 +48,6 @@ func Register(
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
 	onProjectRegistrationNamespace OnNamespaceFunc,
 ) ProjectGetter {
-	// initialize systemNamespaceList as a map
-
-	systemNamespaces := make(map[string]bool)
-	for _, namespace := range systemNamespaceList {
-		systemNamespaces[namespace] = true
-	}
-
 	// note: we never delete namespaces that are created since it's possible that the user may want to leave them around
 	// on remove, we only output a log that says that the user should clean it up and add an annotation that it is orphaned
 	apply = apply.
@@ -71,23 +56,25 @@ func Register(
 		WithNoDeleteGVK(namespaces.GroupVersionKind())
 
 	h := &handler{
-		apply:                          apply,
-		projectLabel:                   projectLabel,
-		systemProjectLabelValue:        systemProjectLabelValue,
-		clusterID:                      clusterID,
-		systemNamespaces:               systemNamespaces,
-		projectRegistrationNamespaces:  make(map[string]*v1.Namespace),
-		namespaces:                     namespaces,
-		namespaceCache:                 namespaceCache,
-		projectHelmCharts:              projectHelmCharts,
-		projectHelmChartCache:          projectHelmChartCache,
-		onProjectRegistrationNamespace: onProjectRegistrationNamespace,
+		apply:                                apply,
+		projectLabel:                         projectLabel,
+		systemProjectLabelValue:              systemProjectLabelValue,
+		clusterID:                            clusterID,
+		systemNamespaceRegister:              NewRegister(),
+		projectRegistrationNamespaceRegister: NewRegister(),
+		namespaces:                           namespaces,
+		namespaceCache:                       namespaceCache,
+		projectHelmCharts:                    projectHelmCharts,
+		projectHelmChartCache:                projectHelmChartCache,
+		onProjectRegistrationNamespace:       onProjectRegistrationNamespace,
 	}
 
 	namespaces.OnChange(ctx, "on-namespace-change", h.OnChange)
 	namespaces.OnRemove(ctx, "on-namespace-remove", h.OnChange)
 
-	namespaceCache.AddIndexer(NamespacesByProjectID, h.namespaceToProjectID)
+	h.initIndexers()
+
+	h.initSystemNamespaces(systemNamespaceList, h.systemNamespaceRegister)
 
 	err := h.initProjectRegistrationNamespaces()
 	if err != nil {
@@ -95,56 +82,6 @@ func Register(
 	}
 
 	return NewLabelBasedProjectGetter(projectLabel, h.isProjectRegistrationNamespace, h.isSystemNamespace, namespaces)
-}
-
-func (h *handler) initProjectRegistrationNamespaces() error {
-	namespaceList, err := h.namespaces.List(metav1.ListOptions{})
-	if err != nil {
-		return fmt.Errorf("unable to list namespaces to enqueue all Helm charts: %s", err)
-	}
-	if namespaceList != nil {
-		logrus.Infof("Identifying and registering projectRegistrationNamespaces...")
-		// trigger the OnChange events for all namespaces before returning on a register
-		//
-		// this ensures that registration will create projectRegistrationNamespaces and
-		// have isProjectRegistration and isSystemNamespace up to sync before it provides
-		// the ProjectGetter interface to other controllers that need it.
-		//
-		// Q: Why don't we use Enqueue here?
-		//
-		// Enqueue will add it to the workqueue but there's no guarentee the namespace's processing
-		// will happen before this function exits, which is what we need to guarentee here.
-		// As a result, we explicitly call OnChange here to force the apply to happen and wait for it to finish
-		for _, ns := range namespaceList.Items {
-			_, err := h.OnChange(ns.Name, &ns)
-			if err != nil {
-				// encountered some error, just fail to start
-				// Possible TODO: Perhaps we should add a backoff retry here?
-				return fmt.Errorf("unable to initialize projectRegistrationNamespaces before starting other handlers that utilize ProjectGetter: %s", err)
-			}
-		}
-	}
-	return nil
-}
-
-func (h *handler) namespaceToProjectID(namespace *v1.Namespace) ([]string, error) {
-	if h.isSystemNamespace(namespace) {
-		return nil, nil
-	}
-	if h.isProjectRegistrationNamespace(namespace) {
-		return nil, nil
-	}
-	if namespace.Labels[common.HelmProjectOperatedLabel] == "true" {
-		// always ignore Helm Project Operated namespaces since those are only
-		// to be scoped to namespaces that are project registration namespaces
-		return nil, nil
-	}
-	projectID, inProject := h.getProjectIDFromNamespaceLabels(namespace)
-	if !inProject {
-		// nothing to do
-		return nil, nil
-	}
-	return []string{projectID}, nil
 }
 
 func (h *handler) OnChange(name string, namespace *v1.Namespace) (*v1.Namespace, error) {
@@ -164,7 +101,7 @@ func (h *handler) OnChange(name string, namespace *v1.Namespace) (*v1.Namespace,
 			return namespace, err
 		}
 		if namespace.DeletionTimestamp != nil {
-			h.deleteProjectRegistrationNamespace(namespace)
+			h.projectRegistrationNamespaceRegister.Delete(namespace)
 		}
 		return namespace, nil
 	case h.isSystemNamespace(namespace):
@@ -180,9 +117,12 @@ func (h *handler) OnChange(name string, namespace *v1.Namespace) (*v1.Namespace,
 }
 
 func (h *handler) enqueueProjectNamespaces(projectRegistrationNamespace *v1.Namespace) error {
+	if projectRegistrationNamespace == nil {
+		return nil
+	}
 	// ensure that we are working with the projectRegistrationNamespace that we expect, not the one we found
-	expectedNamespace, err := h.getProjectRegistrationNamespaceFromNamespace(projectRegistrationNamespace)
-	if err != nil {
+	expectedNamespace, exists := h.projectRegistrationNamespaceRegister.Get(projectRegistrationNamespace.Name)
+	if !exists {
 		// we no longer expect this namespace to exist, so don't enqueue any namespaces
 		return nil
 	}
@@ -311,7 +251,7 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 	if err != nil {
 		return err
 	}
-	h.setProjectRegistrationNamespace(projectRegistrationNamespace)
+	h.projectRegistrationNamespaceRegister.Set(projectRegistrationNamespace)
 
 	// ensure that all ProjectHelmCharts are re-enqueued within this projectRegistrationNamespace
 	projectHelmCharts, err := h.projectHelmChartCache.List(projectRegistrationNamespaceName, labels.Everything())
@@ -329,50 +269,23 @@ func (h *handler) isProjectRegistrationNamespace(namespace *v1.Namespace) bool {
 	if namespace == nil {
 		return false
 	}
-	h.projectRegistrationMapLock.RLock()
-	defer h.projectRegistrationMapLock.RUnlock()
-	_, exists := h.projectRegistrationNamespaces[namespace.Name]
-	return exists
+	return h.projectRegistrationNamespaceRegister.Has(namespace.Name)
 }
 
-func (h *handler) getProjectRegistrationNamespaceFromNamespace(projectRegistrationNamespace *v1.Namespace) (*v1.Namespace, error) {
-	if projectRegistrationNamespace == nil {
-		return nil, fmt.Errorf("cannot get projectRegistrationNamespace from nil projectRegistrationNamespace")
+func (h *handler) isSystemNamespace(namespace *v1.Namespace) bool {
+	if namespace == nil {
+		return false
 	}
-	h.projectRegistrationMapLock.RLock()
-	defer h.projectRegistrationMapLock.RUnlock()
-	ns, exists := h.projectRegistrationNamespaces[projectRegistrationNamespace.Name]
-	if !exists {
-		return nil, fmt.Errorf("%s is not a projectRegistrationNamespace", projectRegistrationNamespace.Name)
-	}
-	return ns, nil
-}
-
-func (h *handler) isSystemNamespace(systemNamespace *v1.Namespace) bool {
-	h.systemMapLock.RLock()
-	_, exists := h.systemNamespaces[systemNamespace.Name]
-	h.systemMapLock.RUnlock()
-	if exists {
+	isTrackedSystemNamespace := h.systemNamespaceRegister.Has(namespace.Name)
+	if isTrackedSystemNamespace {
 		return true
 	}
 	if len(h.systemProjectLabelValue) != 0 {
 		// check if labels indicate this is a system project
-		projectID, inProject := h.getProjectIDFromNamespaceLabels(systemNamespace)
+		projectID, inProject := h.getProjectIDFromNamespaceLabels(namespace)
 		return inProject && projectID == h.systemProjectLabelValue
 	}
 	return false
-}
-
-func (h *handler) setProjectRegistrationNamespace(projectRegistrationNamespace *v1.Namespace) {
-	h.projectRegistrationMapLock.Lock()
-	defer h.projectRegistrationMapLock.Unlock()
-	h.projectRegistrationNamespaces[projectRegistrationNamespace.Name] = projectRegistrationNamespace
-}
-
-func (h *handler) deleteProjectRegistrationNamespace(projectRegistrationNamespace *v1.Namespace) {
-	h.projectRegistrationMapLock.Lock()
-	defer h.projectRegistrationMapLock.Unlock()
-	delete(h.projectRegistrationNamespaces, projectRegistrationNamespace.Name)
 }
 
 func (h *handler) getProjectIDFromNamespaceLabels(namespace *v1.Namespace) (string, bool) {

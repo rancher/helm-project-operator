@@ -23,10 +23,11 @@ type ProjectHelmChartSpec struct {
 type ProjectHelmChartStatus struct {
 	DashboardValues GenericMap `json:"dashboardValues"`
 
-	ProjectHelmChartStatus        string `json:"projectHelmChartStatus"`
-	ProjectHelmChartStatusMessage string `json:"projectHelmChartStatusMessage"`
+	Status        string `json:"status"`
+	StatusMessage string `json:"statusMessage"`
 
-	ProjectSystemNamespace  string   `json:"projectSystemNamespace"`
-	ProjectReleaseNamespace string   `json:"projectReleaseNamespace"`
-	ProjectNamespaces       []string `json:"projectNamespaces"`
+	SystemNamespace  string   `json:"systemNamespace"`
+	ReleaseNamespace string   `json:"releaseNamespace"`
+	ReleaseName      string   `json:"releaseName"`
+	TargetNamespaces []string `json:"targetNamespaces"`
 }
