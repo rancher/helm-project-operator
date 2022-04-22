@@ -12,6 +12,7 @@ import (
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/namespace"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/project"
+	rolebinding "github.com/aiyengar2/helm-project-operator/pkg/controllers/rolebindings"
 	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io"
 	"github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
@@ -95,30 +96,49 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		Host:      opts.NodeName,
 	})
 
+	subjectRoleGetter := rolebinding.Register(
+		ctx,
+		// watches
+		appCtx.RBAC.RoleBinding(),
+		appCtx.RBAC.ClusterRoleBinding(),
+		// enqueues
+		appCtx.Core.Namespace(),
+		appCtx.Core.Namespace().Cache(),
+	)
+
 	projectGetter := namespace.Register(ctx,
 		appCtx.Apply,
 		systemNamespace,
 		valuesYaml,
 		questionsYaml,
 		opts,
+		// watches and generates
 		appCtx.Core.Namespace(),
 		appCtx.Core.Namespace().Cache(),
 		appCtx.Core.ConfigMap(),
+		appCtx.RBAC.Role(),
+		appCtx.RBAC.RoleBinding(),
+		// enqueues
 		appCtx.ProjectHelmChart(),
 		appCtx.ProjectHelmChart().Cache(),
+		subjectRoleGetter,
 	)
 
 	project.Register(ctx,
 		systemNamespace,
 		opts,
 		appCtx.Apply,
+		// watches
 		appCtx.ProjectHelmChart(),
 		appCtx.ProjectHelmChart().Cache(),
+		appCtx.Core.ConfigMap(),
+		appCtx.RBAC.Role(),
+		// watches and generates
 		appCtx.HelmController.HelmChart(),
 		appCtx.HelmLocker.HelmRelease(),
 		appCtx.Core.Namespace(),
 		appCtx.Core.Namespace().Cache(),
-		appCtx.Core.ConfigMap(),
+		appCtx.RBAC.RoleBinding(),
 		projectGetter,
 	)
 

@@ -8,10 +8,15 @@ import (
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	helmapi "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	v1 "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func (h *handler) getHelmChart(valuesContent string, projectHelmChart *v1alpha1.ProjectHelmChart) *helmapi.HelmChart {
+// Note: each resource created here should have a resolver set in resolvers.go
+// The only exception is ProjectHelmCharts since those are handled by the main generating controller
+
+func (h *handler) getHelmChart(projectID string, valuesContent string, projectHelmChart *v1alpha1.ProjectHelmChart) *helmapi.HelmChart {
 	// must be in system namespace since helm controllers are configured to only watch one namespace
 	jobImage := DefaultJobImage
 	if len(h.opts.HelmJobImage) > 0 {
@@ -27,11 +32,11 @@ func (h *handler) getHelmChart(valuesContent string, projectHelmChart *v1alpha1.
 			ValuesContent:   valuesContent,
 		},
 	})
-	helmChart.SetLabels(getLabels(projectHelmChart))
+	helmChart.SetLabels(common.GetHelmResourceLabels(projectID, projectHelmChart.Spec.HelmApiVersion))
 	return helmChart
 }
 
-func (h *handler) getHelmRelease(projectHelmChart *v1alpha1.ProjectHelmChart) *helmlockerapi.HelmRelease {
+func (h *handler) getHelmRelease(projectID string, projectHelmChart *v1alpha1.ProjectHelmChart) *helmlockerapi.HelmRelease {
 	// must be in system namespace since helmlocker controllers are configured to only watch one namespace
 	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
 	helmRelease := helmlockerapi.NewHelmRelease(h.systemNamespace, releaseName, helmlockerapi.HelmRelease{
@@ -42,40 +47,46 @@ func (h *handler) getHelmRelease(projectHelmChart *v1alpha1.ProjectHelmChart) *h
 			},
 		},
 	})
-	helmRelease.SetLabels(getLabels(projectHelmChart))
+	helmRelease.SetLabels(common.GetHelmResourceLabels(projectID, projectHelmChart.Spec.HelmApiVersion))
 	return helmRelease
 }
 
-func (h *handler) getProjectReleaseNamespace(projectID string, projectHelmChart *v1alpha1.ProjectHelmChart) *v1.Namespace {
+func (h *handler) getProjectReleaseNamespace(projectID string, isOrphaned bool, projectHelmChart *v1alpha1.ProjectHelmChart) *v1.Namespace {
 	releaseNamespace, _ := h.getReleaseNamespaceAndName(projectHelmChart)
 	if releaseNamespace == h.systemNamespace || releaseNamespace == projectHelmChart.Namespace {
 		return nil
 	}
-	// Project Release Namespace is only created if ProjectLabel and SystemProjectLabelValue are specified
-	// It will always be created in the system project
-	systemProjectIDWithClusterID := h.opts.SystemProjectLabelValue
-	if len(h.opts.ClusterID) > 0 {
-		systemProjectIDWithClusterID = fmt.Sprintf("%s:%s", h.opts.ClusterID, h.opts.SystemProjectLabelValue)
-	}
 	projectReleaseNamespace := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: releaseNamespace,
-			Annotations: map[string]string{
-				// auto-imports the project into the system project for RBAC stuff
-				h.opts.ProjectLabel: systemProjectIDWithClusterID,
-			},
-			Labels: map[string]string{
-				common.HelmProjectOperatedLabel: "true",
-				// note: this annotation exists so that it's possible to define namespaceSelectors
-				// that select both all namespaces in the project AND the namespace the release resides in
-				// by selecting namespaces that have either of the following labels:
-				// - h.opts.ProjectLabel: projectID
-				// - helm.cattle.io/projectId: projectID
-				common.HelmProjectOperatorProjectLabel: projectID,
-
-				h.opts.ProjectLabel: h.opts.SystemProjectLabelValue,
-			},
+			Name:        releaseNamespace,
+			Annotations: common.GetProjectNamespaceAnnotations(h.opts.SystemProjectLabelValue, h.opts.ProjectLabel, h.opts.ClusterID),
+			Labels:      common.GetProjectNamespaceLabels(projectID, h.opts.ProjectLabel, h.opts.SystemProjectLabelValue, isOrphaned),
 		},
 	}
 	return projectReleaseNamespace
+}
+
+func (h *handler) getRoleBindings(projectID string, k8sRoleToRoleRefs map[string][]rbac.RoleRef, k8sRoleToSubjects map[string][]rbac.Subject, projectHelmChart *v1alpha1.ProjectHelmChart) []runtime.Object {
+	var objs []runtime.Object
+	releaseNamespace, _ := h.getReleaseNamespaceAndName(projectHelmChart)
+
+	for _, k8sRole := range common.DefaultK8sRoles {
+		// note: these role refs point to roles in the release namespace
+		roleRefs := k8sRoleToRoleRefs[k8sRole]
+		// note: these subjects are inferred from the rolebindings tied to the default roles in the registration namespace
+		subjects := k8sRoleToSubjects[k8sRole]
+		for _, roleRef := range roleRefs {
+			objs = append(objs, &rbac.RoleBinding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("hpo-generated-%s-%s", k8sRole, roleRef.Name),
+					Namespace: releaseNamespace,
+					Labels:    common.GetCommonLabels(projectID),
+				},
+				RoleRef:  roleRef,
+				Subjects: subjects,
+			})
+		}
+	}
+
+	return objs
 }

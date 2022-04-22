@@ -6,11 +6,14 @@ import (
 	"time"
 
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
+	rolebinding "github.com/aiyengar2/helm-project-operator/pkg/controllers/rolebindings"
 	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/pkg/apply"
 	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	rbacv1 "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type handler struct {
@@ -28,8 +31,12 @@ type handler struct {
 	namespaces            corecontrollers.NamespaceController
 	namespaceCache        corecontrollers.NamespaceCache
 	configmaps            corecontrollers.ConfigMapController
+	roles                 rbacv1.RoleController
+	rolebindings          rbacv1.RoleBindingController
 	projectHelmCharts     helmproject.ProjectHelmChartController
 	projectHelmChartCache helmproject.ProjectHelmChartCache
+
+	subjectRoleGetter rolebinding.SubjectRoleGetter
 }
 
 func Register(
@@ -40,11 +47,14 @@ func Register(
 	namespaces corecontrollers.NamespaceController,
 	namespaceCache corecontrollers.NamespaceCache,
 	configmaps corecontrollers.ConfigMapController,
+	roles rbacv1.RoleController,
+	rolebindings rbacv1.RoleBindingController,
 	projectHelmCharts helmproject.ProjectHelmChartController,
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
+	subjectRoleGetter rolebinding.SubjectRoleGetter,
 ) ProjectGetter {
 
-	apply = apply.WithCacheTypes(configmaps)
+	apply = apply.WithCacheTypes(configmaps, roles, rolebindings)
 
 	h := &handler{
 		apply:                                apply,
@@ -57,8 +67,11 @@ func Register(
 		namespaces:                           namespaces,
 		namespaceCache:                       namespaceCache,
 		configmaps:                           configmaps,
+		roles:                                roles,
+		rolebindings:                         rolebindings,
 		projectHelmCharts:                    projectHelmCharts,
 		projectHelmChartCache:                projectHelmChartCache,
+		subjectRoleGetter:                    subjectRoleGetter,
 	}
 
 	h.initResolvers(ctx)
@@ -96,12 +109,19 @@ func Register(
 
 func (h *handler) OnSingleNamespaceChange(name string, namespace *v1.Namespace) (*v1.Namespace, error) {
 	if namespace.Name != h.systemNamespace {
+		// enqueue system namespace to ensure that rolebindings are updated
+		h.namespaces.Enqueue(h.systemNamespace)
 		return namespace, nil
 	}
 	// Trigger applying the data for this projectRegistrationNamespace
-	return namespace, h.configureApplyForNamespace(namespace).ApplyObjects(
-		h.getConfigMap(namespace),
-	)
+	var objs []runtime.Object
+	objs = append(objs, h.getConfigMap("", namespace))
+	objs = append(objs, h.getRoles("", namespace)...)
+	// note: default behavior of roleBindings is to only bind subjects who are tied to the default k8s
+	// role via a ClusterRoleBinding, since it's impossible to infer at the namespace level what the ProjectHelmChart's
+	// namespace selector would be to identify target namespaces dynamically.
+	objs = append(objs, h.getRoleBindings("", nil, namespace)...)
+	return namespace, h.configureApplyForNamespace(namespace).ApplyObjects(objs...)
 }
 
 // Multiple Namespaces Handler
@@ -176,22 +196,8 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 		return nil
 	}
 
-	// get the resources and validate them
-	projectRegistrationNamespace := h.getProjectRegistrationNamespace(projectID, namespace)
-	// ensure that the projectRegistrationNamespace created from this projectID is valid
-	if len(projectRegistrationNamespace.Name) > 63 {
-		// ensure that we don't try to create a namespace with too big of a name
-		logrus.Errorf("could not apply namespace with name %s: name is above 63 characters", projectRegistrationNamespace.Name)
-		return nil
-	}
-	if projectRegistrationNamespace.Name == namespace.Name {
-		// the only way this would happen is if h.isProjectRegistrationNamespace(namespace), which means the
-		// the project registration namespace was removed from the cluster after it was orphaned (but still in the project
-		// since it has the projectID label on it). In this case, we can safely ignore and continue
-		return nil
-	}
-
 	// Calculate whether to add the orphaned label
+	var isOrphaned bool
 	projectNamespaces, err := h.namespaceCache.GetByIndex(NamespacesByProjectExcludingRegistrationID, projectID)
 	if err != nil {
 		return err
@@ -206,7 +212,22 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 	}
 	if numNamespaces == 0 {
 		// add orphaned label and trigger a warning
-		projectRegistrationNamespace.Labels[common.HelmProjectOperatedOrphanedLabel] = "true"
+		isOrphaned = true
+	}
+
+	// get the resources and validate them
+	projectRegistrationNamespace := h.getProjectRegistrationNamespace(projectID, isOrphaned, namespace)
+	// ensure that the projectRegistrationNamespace created from this projectID is valid
+	if len(projectRegistrationNamespace.Name) > 63 {
+		// ensure that we don't try to create a namespace with too big of a name
+		logrus.Errorf("could not apply namespace with name %s: name is above 63 characters", projectRegistrationNamespace.Name)
+		return nil
+	}
+	if projectRegistrationNamespace.Name == namespace.Name {
+		// the only way this would happen is if h.isProjectRegistrationNamespace(namespace), which means the
+		// the project registration namespace was removed from the cluster after it was orphaned (but still in the project
+		// since it has the projectID label on it). In this case, we can safely ignore and continue
+		return nil
 	}
 
 	// Trigger the apply and set the projectRegistrationNamespace
@@ -215,9 +236,11 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 		return err
 	}
 	// Trigger applying the data for this projectRegistrationNamespace
-	err = h.configureApplyForNamespace(projectRegistrationNamespace).ApplyObjects(
-		h.getConfigMap(projectRegistrationNamespace),
-	)
+	var objs []runtime.Object
+	objs = append(objs, h.getConfigMap(projectID, projectRegistrationNamespace))
+	objs = append(objs, h.getRoles(projectID, projectRegistrationNamespace)...)
+	objs = append(objs, h.getRoleBindings(projectID, projectNamespaces, projectRegistrationNamespace)...)
+	err = h.configureApplyForNamespace(projectRegistrationNamespace).ApplyObjects(objs...)
 	if err != nil {
 		return err
 	}

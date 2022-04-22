@@ -53,6 +53,7 @@ func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 		ReleaseName:      DummyReleaseName,
 		SystemNamespaces: DummySystemNamespaces,
 		ChartContent:     base64TgzChart,
+		Singleton:        false,
 
 		// These fields are provided on runtime for all project operators
 		ProjectLabel:            o.ProjectLabel,

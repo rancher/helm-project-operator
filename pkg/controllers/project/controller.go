@@ -13,6 +13,7 @@ import (
 	helm "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
 	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	rbacv1 "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,11 +29,13 @@ type handler struct {
 	apply                 apply.Apply
 	projectHelmCharts     helmproject.ProjectHelmChartController
 	projectHelmChartCache helmproject.ProjectHelmChartCache
+	configmaps            corecontrollers.ConfigMapController
+	roles                 rbacv1.RoleController
 	helmCharts            helm.HelmChartController
 	helmReleases          helmlocker.HelmReleaseController
 	namespaces            corecontrollers.NamespaceController
 	namespaceCache        corecontrollers.NamespaceCache
-	configmaps            corecontrollers.ConfigMapController
+	rolebindings          rbacv1.RoleBindingController
 	projectGetter         namespace.ProjectGetter
 }
 
@@ -43,11 +46,13 @@ func Register(
 	apply apply.Apply,
 	projectHelmCharts helmproject.ProjectHelmChartController,
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
+	configmaps corecontrollers.ConfigMapController,
+	roles rbacv1.RoleController,
 	helmCharts helm.HelmChartController,
 	helmReleases helmlocker.HelmReleaseController,
 	namespaces corecontrollers.NamespaceController,
 	namespaceCache corecontrollers.NamespaceCache,
-	configmaps corecontrollers.ConfigMapController,
+	rolebindings rbacv1.RoleBindingController,
 	projectGetter namespace.ProjectGetter,
 ) {
 
@@ -56,7 +61,8 @@ func Register(
 		WithCacheTypes(
 			helmCharts,
 			helmReleases,
-			namespaces).
+			namespaces,
+			rolebindings).
 		WithNoDeleteGVK(namespaces.GroupVersionKind())
 
 	h := &handler{
@@ -65,11 +71,13 @@ func Register(
 		apply:                 apply,
 		projectHelmCharts:     projectHelmCharts,
 		projectHelmChartCache: projectHelmChartCache,
+		configmaps:            configmaps,
+		roles:                 roles,
 		helmCharts:            helmCharts,
 		helmReleases:          helmReleases,
 		namespaces:            namespaces,
 		namespaceCache:        namespaceCache,
-		configmaps:            configmaps,
+		rolebindings:          rolebindings,
 		projectGetter:         projectGetter,
 	}
 
@@ -135,7 +143,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	}
 
 	// handle charts with cleanup label
-	if h.shouldCleanup(projectHelmChart) {
+	if common.HasCleanupLabel(projectHelmChart) {
 		projectHelmChartStatus = h.getCleanupStatus(projectHelmChart, projectHelmChartStatus)
 		logrus.Infof("Cleaning up HelmChart and HelmRelease for ProjectHelmChart %s/%s", projectHelmChart.Namespace, projectHelmChart.Name)
 		return nil, projectHelmChartStatus, nil
@@ -156,14 +164,12 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	// gather target project namespaces
 	targetProjectNamespaces, err := h.projectGetter.GetTargetProjectNamespaces(projectHelmChart)
 	if err != nil {
-		projectHelmChartStatus = h.getNoTargetNamespacesStatus(projectHelmChart, projectHelmChartStatus)
-		return nil, projectHelmChartStatus, fmt.Errorf("unable to get target project namespces for projectHelmChart %s/%s", projectHelmChart.Namespace, projectHelmChart.Name)
+		projectHelmChartStatus = h.getFailedToIdentifyTargetNamespacesStatus(projectHelmChart, projectHelmChartStatus, err)
+		return nil, projectHelmChartStatus, fmt.Errorf("unable to get target project namespaces for projectHelmChart %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Name, err)
 	}
 	if len(targetProjectNamespaces) == 0 {
-		projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, projectHelmChart)
+		projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, true, projectHelmChart)
 		if projectReleaseNamespace != nil {
-			// always patch the projectReleaseNamespace to orphaned if it exists
-			projectReleaseNamespace.Labels[common.HelmProjectOperatedOrphanedLabel] = "true"
 			objs = append(objs, projectReleaseNamespace)
 		}
 		projectHelmChartStatus = h.getNoTargetNamespacesStatus(projectHelmChart, projectHelmChartStatus)
@@ -172,7 +178,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 
 	if releaseNamespace != h.systemNamespace && releaseNamespace != projectHelmChart.Namespace {
 		// need to add release namespace to list of objects to be created
-		projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, projectHelmChart)
+		projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, false, projectHelmChart)
 		objs = append(objs, projectReleaseNamespace)
 		// need to add auto-generated release namespace to target namespaces
 		targetProjectNamespaces = append(targetProjectNamespaces, releaseNamespace)
@@ -183,15 +189,33 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	values := h.getValues(projectHelmChart, projectID, targetProjectNamespaces)
 	valuesContentBytes, err := values.ToYAML()
 	if err != nil {
+		err = fmt.Errorf("unable to marshall spec.values of %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Name, err)
 		projectHelmChartStatus = h.getValuesParseErrorStatus(projectHelmChart, projectHelmChartStatus, err)
-		return nil, projectHelmChartStatus, fmt.Errorf("unable to marshall spec.values of %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Name, err)
+		return nil, projectHelmChartStatus, err
 	}
+
+	// get rolebindings that need to be created in release namespace
+	k8sRolesToRoleRefs, err := h.getK8sRoleToRoleRefsFromRoles(projectHelmChart)
+	if err != nil {
+		err = fmt.Errorf("unable to get default release roles from project release namespace %s for %s/%s: %s", releaseNamespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
+		projectHelmChartStatus = h.getFailedToDefineReleaseRBACStatus(projectHelmChart, projectHelmChartStatus, err)
+		return nil, projectHelmChartStatus, err
+	}
+	k8sRolesToSubjects, err := h.getK8sRoleToSubjectsFromRoleBindings(projectHelmChart)
+	if err != nil {
+		err = fmt.Errorf("unable to get rolebindings to default project operator roles from project registration namespace %s for %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
+		projectHelmChartStatus = h.getFailedToDefineReleaseRBACStatus(projectHelmChart, projectHelmChartStatus, err)
+		return nil, projectHelmChartStatus, err
+	}
+	objs = append(objs,
+		h.getRoleBindings(projectID, k8sRolesToRoleRefs, k8sRolesToSubjects, projectHelmChart)...,
+	)
 
 	// get final status from ConfigMap and deploy
 	projectHelmChartStatus = h.getDeployedStatus(projectHelmChart, projectHelmChartStatus)
 	objs = append(objs,
-		h.getHelmChart(string(valuesContentBytes), projectHelmChart),
-		h.getHelmRelease(projectHelmChart),
+		h.getHelmChart(projectID, string(valuesContentBytes), projectHelmChart),
+		h.getHelmRelease(projectID, projectHelmChart),
 	)
 	return objs, projectHelmChartStatus, nil
 }
@@ -215,10 +239,9 @@ func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmCha
 		return projectHelmChart, err
 	}
 
-	// mark as orphaned; if another ProjectHelmChart exists in this namespace, it will automatically remove the orphaned label on enqueuing
-	// the namespace since that will enqueue all ProjectHelmCharts associated with it
-	projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, projectHelmChart)
-	projectReleaseNamespace.Labels[common.HelmProjectOperatedOrphanedLabel] = "true"
+	// Get orphaned release namsepace and apply it; if another ProjectHelmChart exists in this namespace, it will automatically remove
+	// the orphaned label on enqueuing the namespace since that will enqueue all ProjectHelmCharts associated with it
+	projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, true, projectHelmChart)
 
 	// Why aren't we modifying the set ID or owner here?
 	// Since this applier runs without deleting objects whose GVKs indicate that they are namespaces,

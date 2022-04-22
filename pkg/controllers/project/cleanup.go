@@ -3,19 +3,10 @@ package project
 import (
 	"fmt"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-func (h *handler) shouldCleanup(projectHelmChart *v1alpha1.ProjectHelmChart) bool {
-	if projectHelmChart.Labels == nil {
-		return false
-	}
-	_, shouldCleanup := projectHelmChart.Labels[common.HelmProjectOperatedCleanupLabel]
-	return shouldCleanup
-}
 
 func (h *handler) initRemoveCleanupLabels() error {
 	namespaceList, err := h.namespaces.List(metav1.ListOptions{})

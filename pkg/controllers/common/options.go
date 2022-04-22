@@ -16,13 +16,12 @@ type Options struct {
 
 	ProjectLabel            string
 	SystemProjectLabelValue string
+	SystemDefaultRegistry   string
+	CattleURL               string
 	ClusterID               string
+	NodeName                string
 
 	HelmJobImage string
-	NodeName     string
-
-	SystemDefaultRegistry string
-	CattleURL             string
 }
 
 func (opts Options) Validate() error {
@@ -50,7 +49,7 @@ func (opts Options) Validate() error {
 	}
 
 	if len(opts.ProjectLabel) > 0 {
-		logrus.Infof("Creating dedicated project registration namespaces to discover ProjectHelmCharts based on the value found for the project label %s on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, HelmProjectOperatedOrphanedLabel)
+		logrus.Infof("Creating dedicated project registration namespaces to discover ProjectHelmCharts based on the value found for the project label %s on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, HelmProjectOperatedNamespaceOrphanedLabel)
 		if len(opts.SystemProjectLabelValue) > 0 {
 			logrus.Infof("assuming namespaces tagged with %s=%s are also system namespaces", opts.ProjectLabel, opts.SystemProjectLabelValue)
 		}

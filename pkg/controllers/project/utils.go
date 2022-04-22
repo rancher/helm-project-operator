@@ -2,7 +2,6 @@ package project
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
@@ -66,11 +65,4 @@ func (h *handler) getReleaseNamespaceAndName(projectHelmChart *v1alpha1.ProjectH
 	}
 	// Underlying Helm releases will be created in dedicated project release namespaces
 	return projectReleaseName, projectReleaseName
-}
-
-func getLabels(projectHelmChart *v1alpha1.ProjectHelmChart) map[string]string {
-	return map[string]string{
-		common.HelmProjectOperatedLabel:               "true",
-		common.HelmProjectOperatorHelmApiVersionLabel: strings.SplitN(projectHelmChart.Spec.HelmApiVersion, "/", 2)[0],
-	}
 }
