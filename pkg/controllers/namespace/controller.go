@@ -14,7 +14,8 @@ import (
 )
 
 type handler struct {
-	apply apply.Apply
+	namespaceApply apply.Apply
+	apply          apply.Apply
 
 	systemNamespace string
 	valuesYaml      string
@@ -43,12 +44,7 @@ func Register(
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
 ) ProjectGetter {
 
-	// note: we never delete namespaces that are created since it's possible that the user may want to leave them around
-	// on remove, we only output a log that says that the user should clean it up and add an annotation that it is orphaned
-	apply = apply.
-		WithSetID("project-registration-namespace-applier").
-		WithCacheTypes(namespaces, configmaps).
-		WithNoDeleteGVK(namespaces.GroupVersionKind())
+	apply = apply.WithCacheTypes(configmaps)
 
 	h := &handler{
 		apply:                                apply,
@@ -75,6 +71,14 @@ func Register(
 		return NewSingleNamespaceProjectGetter(systemNamespace, opts.SystemNamespaces, namespaces)
 	}
 
+	// the namespaceApply is only needed in a multi-namespace setup
+	// note: we never delete namespaces that are created since it's possible that the user may want to leave them around
+	// on remove, we only output a log that says that the user should clean it up and add an annotation that it is orphaned
+	h.namespaceApply = apply.
+		WithSetID("project-registration-namespace-applier").
+		WithCacheTypes(namespaces).
+		WithNoDeleteGVK(namespaces.GroupVersionKind())
+
 	namespaces.OnChange(ctx, "on-namespace-change", h.OnMultiNamespaceChange)
 	namespaces.OnRemove(ctx, "on-namespace-remove", h.OnMultiNamespaceChange)
 
@@ -94,7 +98,10 @@ func (h *handler) OnSingleNamespaceChange(name string, namespace *v1.Namespace) 
 	if namespace.Name != h.systemNamespace {
 		return namespace, nil
 	}
-	return namespace, h.apply.ApplyObjects(h.getConfigMap(namespace))
+	// Trigger applying the data for this projectRegistrationNamespace
+	return namespace, h.configureApplyForNamespace(namespace).ApplyObjects(
+		h.getConfigMap(namespace),
+	)
 }
 
 // Multiple Namespaces Handler
@@ -171,7 +178,6 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 
 	// get the resources and validate them
 	projectRegistrationNamespace := h.getProjectRegistrationNamespace(projectID, namespace)
-	projectRegistrationConfigmap := h.getConfigMap(projectRegistrationNamespace)
 	// ensure that the projectRegistrationNamespace created from this projectID is valid
 	if len(projectRegistrationNamespace.Name) > 63 {
 		// ensure that we don't try to create a namespace with too big of a name
@@ -204,7 +210,14 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 	}
 
 	// Trigger the apply and set the projectRegistrationNamespace
-	err = h.apply.ApplyObjects(projectRegistrationNamespace, projectRegistrationConfigmap)
+	err = h.namespaceApply.ApplyObjects(projectRegistrationNamespace)
+	if err != nil {
+		return err
+	}
+	// Trigger applying the data for this projectRegistrationNamespace
+	err = h.configureApplyForNamespace(projectRegistrationNamespace).ApplyObjects(
+		h.getConfigMap(projectRegistrationNamespace),
+	)
 	if err != nil {
 		return err
 	}

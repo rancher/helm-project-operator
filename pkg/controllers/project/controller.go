@@ -220,6 +220,10 @@ func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmCha
 	projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, projectHelmChart)
 	projectReleaseNamespace.Labels[common.HelmProjectOperatedOrphanedLabel] = "true"
 
+	// Why aren't we modifying the set ID or owner here?
+	// Since this applier runs without deleting objects whose GVKs indicate that they are namespaces,
+	// we don't have to worry about another controller using this same set ID (e.g. another Project Operator)
+	// that will delete this projectReleaseNamespace on seeing it
 	err = h.apply.ApplyObjects(projectReleaseNamespace)
 	if err != nil {
 		return projectHelmChart, fmt.Errorf("unable to add orphaned annotation to project release namespace %s", projectReleaseNamespace.Name)
