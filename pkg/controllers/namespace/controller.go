@@ -13,6 +13,7 @@ import (
 	rbacv1 "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -235,6 +236,13 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 	if err != nil {
 		return err
 	}
+
+	// get the projectRegistrationNamespace after applying to get a valid object to pass in as the owner of the next apply
+	projectRegistrationNamespace, err = h.namespaces.Get(projectRegistrationNamespace.Name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("unable to get project registration namespace from cache after create: %s", err)
+	}
+
 	// Trigger applying the data for this projectRegistrationNamespace
 	var objs []runtime.Object
 	objs = append(objs, h.getConfigMap(projectID, projectRegistrationNamespace))
