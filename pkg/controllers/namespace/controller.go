@@ -15,6 +15,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
 )
 
 type handler struct {
@@ -52,6 +53,7 @@ func Register(
 	rolebindings rbacv1.RoleBindingController,
 	projectHelmCharts helmproject.ProjectHelmChartController,
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
+	dynamic dynamic.Interface,
 	subjectRoleGetter rolebinding.SubjectRoleGetter,
 ) ProjectGetter {
 
@@ -74,6 +76,8 @@ func Register(
 		projectHelmChartCache:                projectHelmChartCache,
 		subjectRoleGetter:                    subjectRoleGetter,
 	}
+
+	h.apply = h.addReconcilers(h.apply, dynamic)
 
 	h.initResolvers(ctx)
 

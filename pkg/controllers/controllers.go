@@ -36,6 +36,7 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
@@ -47,8 +48,9 @@ import (
 type appContext struct {
 	v1alpha1.Interface
 
-	K8s  kubernetes.Interface
-	Core corecontrollers.Interface
+	Dynamic dynamic.Interface
+	K8s     kubernetes.Interface
+	Core    corecontrollers.Interface
 
 	HelmLocker        helmlockercontrollers.Interface
 	ObjectSetRegister objectset.LockableObjectSetRegister
@@ -121,6 +123,7 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		// enqueues
 		appCtx.ProjectHelmChart(),
 		appCtx.ProjectHelmChart().Cache(),
+		appCtx.Dynamic,
 		subjectRoleGetter,
 	)
 
@@ -202,6 +205,11 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 		return nil, err
 	}
 	client.RateLimiter = ratelimit.None
+
+	dynamic, err := dynamic.NewForConfig(client)
+	if err != nil {
+		return nil, err
+	}
 
 	k8s, err := kubernetes.NewForConfig(client)
 	if err != nil {
@@ -292,8 +300,9 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 	return &appContext{
 		Interface: helmprojectv,
 
-		K8s:  k8s,
-		Core: corev,
+		Dynamic: dynamic,
+		K8s:     k8s,
+		Core:    corev,
 
 		HelmLocker:        helmlockerv,
 		ObjectSetRegister: objectSetRegister,
