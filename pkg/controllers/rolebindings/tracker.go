@@ -19,6 +19,17 @@ type SubjectRoleTracker interface {
 	Set(subject rbac.Subject, namespace string, k8sRole string, hasRole bool)
 }
 
+func NewNoopSubjectRoleGetter() SubjectRoleGetter {
+	return &noopSubjectRoleTracker{}
+}
+
+type noopSubjectRoleTracker struct {
+}
+
+func (t *noopSubjectRoleTracker) GetSubjects(targetNamespaces []string, k8sRole string) []rbac.Subject {
+	return nil
+}
+
 func NewSubjectRoleTracker() SubjectRoleTracker {
 	return &projectSubjectRoleTracker{
 		subjectToNamespaceToRole: make(map[rbac.Subject]map[string]subjectRole),
