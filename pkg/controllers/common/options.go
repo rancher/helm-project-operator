@@ -20,6 +20,7 @@ type Options struct {
 	CattleURL               string
 	ClusterID               string
 	NodeName                string
+	DisableRBACAggregation  bool
 
 	HelmJobImage string
 }
@@ -65,5 +66,10 @@ func (opts Options) Validate() error {
 	if len(opts.NodeName) > 0 {
 		logrus.Infof("Marking events as being sourced from node %s", opts.NodeName)
 	}
+
+	if !opts.DisableRBACAggregation {
+		logrus.Infof("Automatic RBAC aggregation based on RoleBindings and ClusterRoleBindings on default k8s roles in project namespaces is enabled")
+	}
+
 	return nil
 }

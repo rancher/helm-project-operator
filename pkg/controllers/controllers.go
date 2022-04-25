@@ -99,15 +99,20 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		Host:      opts.NodeName,
 	})
 
-	subjectRoleGetter := rolebinding.Register(
-		ctx,
-		// watches
-		appCtx.RBAC.RoleBinding(),
-		appCtx.RBAC.ClusterRoleBinding(),
-		// enqueues
-		appCtx.Core.Namespace(),
-		appCtx.Core.Namespace().Cache(),
-	)
+	var subjectRoleGetter rolebinding.SubjectRoleGetter
+	if !opts.DisableRBACAggregation {
+		subjectRoleGetter = rolebinding.Register(
+			ctx,
+			// watches
+			appCtx.RBAC.RoleBinding(),
+			appCtx.RBAC.ClusterRoleBinding(),
+			// enqueues
+			appCtx.Core.Namespace(),
+			appCtx.Core.Namespace().Cache(),
+		)
+	} else {
+		subjectRoleGetter = rolebinding.NewNoopSubjectRoleGetter()
+	}
 
 	projectGetter := namespace.Register(ctx,
 		appCtx.Apply,

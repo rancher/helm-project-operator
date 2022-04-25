@@ -37,4 +37,8 @@ type RuntimeOptions struct {
 	// If both this and the above example are provided, any namespaces with label 'field.cattle.io/projectId: p-ranch' will be treated
 	// as a systemNamespace, which means that no ProjectHelmChart will be allowed to select it
 	SystemProjectLabelValue string `usage:"Value on project label on namespaces that marks it as a system namespace" env:"SYSTEM_PROJECT_LABEL_VALUE"`
+
+	// DisableRBACAggregation disables starting up the RBAC controllers that automaticaly create RoleBindings on the default Operator Roles deployed
+	// onto each Project Registration namespace. By default, aggregation is turned on.
+	DisableRBACAggregation bool `usage:"Disables RBAC aggregation of Kubernetes Default Roles on default operator roles deployed onto Project Registration Namespaces" env:"DISABLE_RBAC_AGGREGATION"`
 }
