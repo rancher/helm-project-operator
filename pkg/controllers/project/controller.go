@@ -30,12 +30,15 @@ type handler struct {
 	projectHelmCharts     helmproject.ProjectHelmChartController
 	projectHelmChartCache helmproject.ProjectHelmChartCache
 	configmaps            corecontrollers.ConfigMapController
+	configmapCache        corecontrollers.ConfigMapCache
 	roles                 rbacv1.RoleController
+	roleCache             rbacv1.RoleCache
 	helmCharts            helm.HelmChartController
 	helmReleases          helmlocker.HelmReleaseController
 	namespaces            corecontrollers.NamespaceController
 	namespaceCache        corecontrollers.NamespaceCache
 	rolebindings          rbacv1.RoleBindingController
+	rolebindingCache      rbacv1.RoleBindingCache
 	projectGetter         namespace.ProjectGetter
 }
 
@@ -47,12 +50,15 @@ func Register(
 	projectHelmCharts helmproject.ProjectHelmChartController,
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
 	configmaps corecontrollers.ConfigMapController,
+	configmapCache corecontrollers.ConfigMapCache,
 	roles rbacv1.RoleController,
+	roleCache rbacv1.RoleCache,
 	helmCharts helm.HelmChartController,
 	helmReleases helmlocker.HelmReleaseController,
 	namespaces corecontrollers.NamespaceController,
 	namespaceCache corecontrollers.NamespaceCache,
 	rolebindings rbacv1.RoleBindingController,
+	rolebindingCache rbacv1.RoleBindingCache,
 	projectGetter namespace.ProjectGetter,
 ) {
 
@@ -72,12 +78,15 @@ func Register(
 		projectHelmCharts:     projectHelmCharts,
 		projectHelmChartCache: projectHelmChartCache,
 		configmaps:            configmaps,
+		configmapCache:        configmapCache,
 		roles:                 roles,
+		roleCache:             roleCache,
 		helmCharts:            helmCharts,
 		helmReleases:          helmReleases,
 		namespaces:            namespaces,
 		namespaceCache:        namespaceCache,
 		rolebindings:          rolebindings,
+		rolebindingCache:      rolebindingCache,
 		projectGetter:         projectGetter,
 	}
 

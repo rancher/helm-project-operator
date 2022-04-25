@@ -2,7 +2,6 @@ package project
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
@@ -11,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 	rbac "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Note: each resource created here should have a resolver set in resolvers.go
@@ -25,17 +23,15 @@ func (h *handler) getDashboardValuesFromConfigmaps(projectHelmChart *v1alpha1.Pr
 	if !exists {
 		return nil, nil
 	}
-	configMapList, err := h.configmaps.List(releaseNamespace, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", common.HelmProjectOperatorDashboardValuesConfigMapLabel, releaseName),
-	})
+	configMaps, err := h.configmapCache.GetByIndex(ConfigMapInReleaseNamespaceByReleaseName, releaseName)
 	if err != nil {
 		return nil, err
 	}
-	if configMapList == nil {
-		return nil, nil
-	}
 	var values v1alpha1.GenericMap
-	for _, configMap := range configMapList.Items {
+	for _, configMap := range configMaps {
+		if configMap == nil {
+			continue
+		}
 		for jsonKey, jsonContent := range configMap.Data {
 			if !strings.HasSuffix(jsonKey, ".json") {
 				logrus.Errorf("dashboard values configmap %s/%s has non-JSON key %s, expected only keys ending with .json. skipping...", configMap.Namespace, configMap.Name, jsonKey)
@@ -66,16 +62,14 @@ func (h *handler) getK8sRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.Proje
 	if !exists {
 		return nil, nil
 	}
-	roleList, err := h.roles.List(releaseNamespace, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", common.HelmProjectOperatorProjectHelmChartRoleLabel, releaseName),
-	})
+	roles, err := h.roleCache.GetByIndex(RoleInReleaseNamespaceByReleaseName, releaseName)
 	if err != nil {
 		return nil, err
 	}
-	if roleList == nil {
-		return nil, nil
-	}
-	for _, role := range roleList.Items {
+	for _, role := range roles {
+		if role == nil {
+			continue
+		}
 		k8sRole, ok := role.Labels[common.HelmProjectOperatorProjectHelmChartRoleAggregateFromLabel]
 		if !ok {
 			// cannot assign roles if this label is not provided

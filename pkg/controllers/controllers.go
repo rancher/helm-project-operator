@@ -135,13 +135,16 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.ProjectHelmChart(),
 		appCtx.ProjectHelmChart().Cache(),
 		appCtx.Core.ConfigMap(),
+		appCtx.Core.ConfigMap().Cache(),
 		appCtx.RBAC.Role(),
+		appCtx.RBAC.Role().Cache(),
 		// watches and generates
 		appCtx.HelmController.HelmChart(),
 		appCtx.HelmLocker.HelmRelease(),
 		appCtx.Core.Namespace(),
 		appCtx.Core.Namespace().Cache(),
 		appCtx.RBAC.RoleBinding(),
+		appCtx.RBAC.RoleBinding().Cache(),
 		projectGetter,
 	)
 

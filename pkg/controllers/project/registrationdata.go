@@ -6,7 +6,6 @@ import (
 	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	rbac "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Note: each resource created here should have a resolver set in resolvers.go
@@ -16,19 +15,19 @@ func (h *handler) getK8sRoleToSubjectsFromRoleBindings(projectHelmChart *v1alpha
 	for _, k8sRole := range common.DefaultK8sRoles {
 		k8sRoleToSubjectMap[k8sRole] = make(map[string]rbac.Subject)
 	}
-	rolebindingList, err := h.rolebindings.List(projectHelmChart.Namespace, metav1.ListOptions{})
+	defaultOperatorRoleBindings, err := h.rolebindingCache.GetByIndex(RoleBindingInRegistrationNamespaceByReleaseName, RoleBindingReferencesDefaultOperatorRole)
 	if err != nil {
 		return nil, err
 	}
-	if rolebindingList == nil {
-		return nil, nil
-	}
-	for _, rolebinding := range rolebindingList.Items {
-		k8sRole, isDefaultRoleRef := common.GetK8sRoleFromOperatorDefaultRoleName(h.opts.ReleaseName, rolebinding.RoleRef.Name)
+	for _, rb := range defaultOperatorRoleBindings {
+		if rb == nil {
+			continue
+		}
+		k8sRole, isDefaultRoleRef := common.GetK8sRoleFromOperatorDefaultRoleName(h.opts.ReleaseName, rb.RoleRef.Name)
 		if !isDefaultRoleRef {
 			continue
 		}
-		filteredSubjects := common.FilterToUsersAndGroups(rolebinding.Subjects)
+		filteredSubjects := common.FilterToUsersAndGroups(rb.Subjects)
 		currSubjects := k8sRoleToSubjectMap[k8sRole]
 		for _, filteredSubject := range filteredSubjects {
 			// collect into a map to avoid putting duplicates of the same subject
