@@ -1,6 +1,8 @@
 package project
 
 import (
+	"fmt"
+
 	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	corev1 "k8s.io/api/core/v1"
@@ -12,18 +14,25 @@ const (
 	ProjectHelmChartByReleaseName = "helm.cattle.io/project-helm-chart-by-release-name"
 
 	// Registration namespaces only
-	RoleBindingInRegistrationNamespaceByReleaseName = "helm.cattle.io/role-binding-in-registration-ns-by-release-name"
-	RoleBindingReferencesDefaultOperatorRole        = "role-binding-references-default-operator-role"
+	RoleBindingInRegistrationNamespaceByRoleRef = "helm.cattle.io/role-binding-in-registration-ns-by-role-ref"
+	ClusterRoleBindingByRoleRef                 = "helm.cattle.io/cluster-role-binding-by-role-ref"
+	BindingReferencesDefaultOperatorRole        = "bound-to-default-role"
 
 	// Release namespaces only
 	RoleInReleaseNamespaceByReleaseName      = "helm.cattle.io/role-in-release-ns-by-release-name"
 	ConfigMapInReleaseNamespaceByReleaseName = "helm.cattle.io/configmap-in-release-ns-by-release-name"
 )
 
+func NamespacedBindingReferencesDefaultOperatorRole(namespace string) string {
+	return fmt.Sprintf("%s/%s", namespace, BindingReferencesDefaultOperatorRole)
+}
+
 func (h *handler) initIndexers() {
 	h.projectHelmChartCache.AddIndexer(ProjectHelmChartByReleaseName, h.projectHelmChartToReleaseName)
 
-	h.rolebindingCache.AddIndexer(RoleBindingInRegistrationNamespaceByReleaseName, h.roleBindingInRegistrationNamespaceToReleaseName)
+	h.rolebindingCache.AddIndexer(RoleBindingInRegistrationNamespaceByRoleRef, h.roleBindingInRegistrationNamespaceToRoleRef)
+
+	h.clusterrolebindingCache.AddIndexer(ClusterRoleBindingByRoleRef, h.clusterRoleBindingToRoleRef)
 
 	h.roleCache.AddIndexer(RoleInReleaseNamespaceByReleaseName, h.roleInReleaseNamespaceToReleaseName)
 
@@ -35,7 +44,7 @@ func (h *handler) projectHelmChartToReleaseName(projectHelmChart *v1alpha1.Proje
 	return []string{releaseName}, nil
 }
 
-func (h *handler) roleBindingInRegistrationNamespaceToReleaseName(rb *rbac.RoleBinding) ([]string, error) {
+func (h *handler) roleBindingInRegistrationNamespaceToRoleRef(rb *rbac.RoleBinding) ([]string, error) {
 	isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(rb.Namespace)
 	if err != nil {
 		return nil, err
@@ -43,14 +52,25 @@ func (h *handler) roleBindingInRegistrationNamespaceToReleaseName(rb *rbac.RoleB
 	if !isProjectRegistrationNamespace {
 		return nil, nil
 	}
-	_, isDefaultRoleRef := common.GetK8sRoleFromOperatorDefaultRoleName(h.opts.ReleaseName, rb.RoleRef.Name)
+	_, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, rb.RoleRef.Name)
 	if !isDefaultRoleRef {
 		// we only care about rolebindings in the registration namespace that are tied to the default roles
 		// created by this operator
 		return nil, nil
 	}
 	// keep track of this rolebinding in the index so we can grab it later
-	return []string{RoleBindingReferencesDefaultOperatorRole}, nil
+	return []string{NamespacedBindingReferencesDefaultOperatorRole(rb.Namespace)}, nil
+}
+
+func (h *handler) clusterRoleBindingToRoleRef(crb *rbac.ClusterRoleBinding) ([]string, error) {
+	_, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, crb.RoleRef.Name)
+	if !isDefaultRoleRef {
+		// we only care about rolebindings in the registration namespace that are tied to the default roles
+		// created by this operator
+		return nil, nil
+	}
+	// keep track of this rolebinding in the index so we can grab it later
+	return []string{BindingReferencesDefaultOperatorRole}, nil
 }
 
 func (h *handler) roleInReleaseNamespaceToReleaseName(role *rbac.Role) ([]string, error) {

@@ -6,11 +6,9 @@ import (
 	"time"
 
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
-	rolebinding "github.com/aiyengar2/helm-project-operator/pkg/controllers/rolebindings"
 	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/pkg/apply"
 	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	rbacv1 "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,12 +31,8 @@ type handler struct {
 	namespaces            corecontrollers.NamespaceController
 	namespaceCache        corecontrollers.NamespaceCache
 	configmaps            corecontrollers.ConfigMapController
-	roles                 rbacv1.RoleController
-	rolebindings          rbacv1.RoleBindingController
 	projectHelmCharts     helmproject.ProjectHelmChartController
 	projectHelmChartCache helmproject.ProjectHelmChartCache
-
-	subjectRoleGetter rolebinding.SubjectRoleGetter
 }
 
 func Register(
@@ -49,15 +43,12 @@ func Register(
 	namespaces corecontrollers.NamespaceController,
 	namespaceCache corecontrollers.NamespaceCache,
 	configmaps corecontrollers.ConfigMapController,
-	roles rbacv1.RoleController,
-	rolebindings rbacv1.RoleBindingController,
 	projectHelmCharts helmproject.ProjectHelmChartController,
 	projectHelmChartCache helmproject.ProjectHelmChartCache,
 	dynamic dynamic.Interface,
-	subjectRoleGetter rolebinding.SubjectRoleGetter,
 ) ProjectGetter {
 
-	apply = apply.WithCacheTypes(configmaps, roles, rolebindings)
+	apply = apply.WithCacheTypes(configmaps)
 
 	h := &handler{
 		apply:                                apply,
@@ -70,11 +61,8 @@ func Register(
 		namespaces:                           namespaces,
 		namespaceCache:                       namespaceCache,
 		configmaps:                           configmaps,
-		roles:                                roles,
-		rolebindings:                         rolebindings,
 		projectHelmCharts:                    projectHelmCharts,
 		projectHelmChartCache:                projectHelmChartCache,
-		subjectRoleGetter:                    subjectRoleGetter,
 	}
 
 	h.apply = h.addReconcilers(h.apply, dynamic)
@@ -121,11 +109,6 @@ func (h *handler) OnSingleNamespaceChange(name string, namespace *v1.Namespace) 
 	// Trigger applying the data for this projectRegistrationNamespace
 	var objs []runtime.Object
 	objs = append(objs, h.getConfigMap("", namespace))
-	objs = append(objs, h.getRoles("", namespace)...)
-	// note: default behavior of roleBindings is to only bind subjects who are tied to the default k8s
-	// role via a ClusterRoleBinding, since it's impossible to infer at the namespace level what the ProjectHelmChart's
-	// namespace selector would be to identify target namespaces dynamically.
-	objs = append(objs, h.getRoleBindings("", nil, namespace)...)
 	return namespace, h.configureApplyForNamespace(namespace).ApplyObjects(objs...)
 }
 
@@ -250,8 +233,6 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 	// Trigger applying the data for this projectRegistrationNamespace
 	var objs []runtime.Object
 	objs = append(objs, h.getConfigMap(projectID, projectRegistrationNamespace))
-	objs = append(objs, h.getRoles(projectID, projectRegistrationNamespace)...)
-	objs = append(objs, h.getRoleBindings(projectID, projectNamespaces, projectRegistrationNamespace)...)
 	err = h.configureApplyForNamespace(projectRegistrationNamespace).ApplyObjects(objs...)
 	if err != nil {
 		return err

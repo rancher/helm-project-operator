@@ -1,8 +1,6 @@
 package project
 
 import (
-	"fmt"
-
 	helmlockerapi "github.com/aiyengar2/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
@@ -70,15 +68,19 @@ func (h *handler) getRoleBindings(projectID string, k8sRoleToRoleRefs map[string
 	var objs []runtime.Object
 	releaseNamespace, _ := h.getReleaseNamespaceAndName(projectHelmChart)
 
-	for _, k8sRole := range common.DefaultK8sRoles {
+	for _, k8sRole := range common.GetDefaultClusterRoles(h.opts) {
 		// note: these role refs point to roles in the release namespace
 		roleRefs := k8sRoleToRoleRefs[k8sRole]
 		// note: these subjects are inferred from the rolebindings tied to the default roles in the registration namespace
 		subjects := k8sRoleToSubjects[k8sRole]
+		if len(subjects) == 0 {
+			// no need to create empty RoleBindings
+			continue
+		}
 		for _, roleRef := range roleRefs {
 			objs = append(objs, &rbac.RoleBinding{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("hpo-generated-%s-%s", k8sRole, roleRef.Name),
+					Name:      roleRef.Name,
 					Namespace: releaseNamespace,
 					Labels:    common.GetCommonLabels(projectID),
 				},

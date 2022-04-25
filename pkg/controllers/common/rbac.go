@@ -1,68 +1,28 @@
 package common
 
 import (
-	"fmt"
-	"strings"
-
 	rbac "k8s.io/api/rbac/v1"
 )
 
-var (
-	ClusterAdminClusterRoleRef = rbac.RoleRef{
-		APIGroup: rbac.GroupName,
-		Kind:     "ClusterRole",
-		Name:     "cluster-admin",
+func GetDefaultClusterRoles(opts Options) map[string]string {
+	clusterRoles := make(map[string]string)
+	if len(opts.AdminClusterRole) > 0 {
+		clusterRoles["admin"] = opts.AdminClusterRole
 	}
-	AdminClusterRoleRef = rbac.RoleRef{
-		APIGroup: rbac.GroupName,
-		Kind:     "ClusterRole",
-		Name:     "admin",
+	if len(opts.EditClusterRole) > 0 {
+		clusterRoles["edit"] = opts.EditClusterRole
 	}
-	EditClusterRoleRef = rbac.RoleRef{
-		APIGroup: rbac.GroupName,
-		Kind:     "ClusterRole",
-		Name:     "edit",
+	if len(opts.ViewClusterRole) > 0 {
+		clusterRoles["view"] = opts.ViewClusterRole
 	}
-	ViewClusterRoleRef = rbac.RoleRef{
-		APIGroup: rbac.GroupName,
-		Kind:     "ClusterRole",
-		Name:     "view",
-	}
-
-	DefaultK8sRoles = []string{
-		ClusterAdminClusterRoleRef.Name,
-		AdminClusterRoleRef.Name,
-		EditClusterRoleRef.Name,
-		ViewClusterRoleRef.Name,
-	}
-)
-
-func IsK8sDefaultClusterRoleRef(roleRef rbac.RoleRef) (string, bool) {
-	switch roleRef {
-	case ClusterAdminClusterRoleRef, AdminClusterRoleRef, EditClusterRoleRef, ViewClusterRoleRef:
-		return roleRef.Name, true
-	default:
-		return "", false
-	}
+	return clusterRoles
 }
 
-func GetOperatorDefaultRolePrefix(releaseName string) string {
-	return fmt.Sprintf("hpo-%s-", releaseName)
-}
-
-func GetOperatorDefaultRoleName(releaseName, k8sRole string) string {
-	return GetOperatorDefaultRolePrefix(releaseName) + k8sRole
-}
-
-func GetK8sRoleFromOperatorDefaultRoleName(releaseName, roleName string) (string, bool) {
-	prefix := GetOperatorDefaultRolePrefix(releaseName)
-	if !strings.HasPrefix(roleName, prefix) {
-		return "", false
-	}
-	trimmed := strings.TrimPrefix(roleName, prefix)
-	switch trimmed {
-	case ClusterAdminClusterRoleRef.Name, AdminClusterRoleRef.Name, EditClusterRoleRef.Name, ViewClusterRoleRef.Name:
-		return trimmed, true
+func IsDefaultClusterRoleRef(opts Options, roleRefName string) (string, bool) {
+	for subjectRole, defaultClusterRoleName := range GetDefaultClusterRoles(opts) {
+		if roleRefName == defaultClusterRoleName {
+			return subjectRole, true
+		}
 	}
 	return "", false
 }

@@ -20,7 +20,9 @@ type Options struct {
 	CattleURL               string
 	ClusterID               string
 	NodeName                string
-	DisableRBACAggregation  bool
+	AdminClusterRole        string
+	EditClusterRole         string
+	ViewClusterRole         string
 
 	HelmJobImage string
 }
@@ -67,8 +69,11 @@ func (opts Options) Validate() error {
 		logrus.Infof("Marking events as being sourced from node %s", opts.NodeName)
 	}
 
-	if !opts.DisableRBACAggregation {
-		logrus.Infof("Automatic RBAC aggregation based on RoleBindings and ClusterRoleBindings on default k8s roles in project namespaces is enabled")
+	for subjectRole, defaultClusterRoleName := range GetDefaultClusterRoles(opts) {
+		logrus.Infof("RoleBindings will automatically be created for Roles in the Project Release Namespace marked with '%s': '<helm-release>' "+
+			"and '%s': '%s' based on ClusterRoleBindings or RoleBindings in the Project Registration namespace tied to ClusterRole %s",
+			HelmProjectOperatorProjectHelmChartRoleLabel, HelmProjectOperatorProjectHelmChartRoleAggregateFromLabel, subjectRole, defaultClusterRoleName,
+		)
 	}
 
 	return nil

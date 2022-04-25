@@ -38,7 +38,18 @@ type RuntimeOptions struct {
 	// as a systemNamespace, which means that no ProjectHelmChart will be allowed to select it
 	SystemProjectLabelValue string `usage:"Value on project label on namespaces that marks it as a system namespace" env:"SYSTEM_PROJECT_LABEL_VALUE"`
 
-	// DisableRBACAggregation disables starting up the RBAC controllers that automaticaly create RoleBindings on the default Operator Roles deployed
-	// onto each Project Registration namespace. By default, aggregation is turned on.
-	DisableRBACAggregation bool `usage:"Disables RBAC aggregation of Kubernetes Default Roles on default operator roles deployed onto Project Registration Namespaces" env:"DISABLE_RBAC_AGGREGATION"`
+	// AdminClusterRole configures the operator to automaticaly create RoleBindings on Roles in the Project Release Namespace marked with
+	// 'helm.cattle.io/project-helm-chart-role': '<helm-release>' and 'helm.cattle.io/project-helm-chart-role-aggregate-from': 'admin'
+	// based on ClusterRoleBindings or RoleBindings in the Project Registration namespace tied to the provided ClusterRole, if it exists
+	AdminClusterRole string `usage:"ClusterRole tied to admin users who should have permissions in the Project Release Namespace" env:"ADMIN_CLUSTER_ROLE"`
+
+	// EditClusterRole configures the operator to automaticaly create RoleBindings on Roles in the Project Release Namespace marked with
+	// 'helm.cattle.io/project-helm-chart-role': '<helm-release>' and 'helm.cattle.io/project-helm-chart-role-aggregate-from': 'edit'
+	// based on ClusterRoleBindings or RoleBindings in the Project Registration namespace tied to the provided ClusterRole, if it exists
+	EditClusterRole string `usage:"ClusterRole tied to edit users who should have permissions in the Project Release Namespace" env:"EDIT_CLUSTER_ROLE"`
+
+	// ViewClusterRole configures the operator to automaticaly create RoleBindings on Roles in the Project Release Namespace marked with
+	// 'helm.cattle.io/project-helm-chart-role': '<helm-release>' and 'helm.cattle.io/project-helm-chart-role-aggregate-from': 'view'
+	// based on ClusterRoleBindings or RoleBindings in the Project Registration namespace tied to the provided ClusterRole, if it exists
+	ViewClusterRole string `usage:"ClusterRole tied to view users who should have permissions in the Project Release Namespace" env:"VIEW_CLUSTER_ROLE"`
 }
