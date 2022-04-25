@@ -63,6 +63,8 @@ func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 		CattleURL:               o.CattleURL,
 		ClusterID:               o.ClusterID,
 		NodeName:                o.NodeName,
+		HelmJobImage:            o.HelmJobImage,
+		DisableRBACAggregation:  o.DisableRBACAggregation,
 	}); err != nil {
 		return err
 	}
