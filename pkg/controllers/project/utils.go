@@ -9,7 +9,8 @@ import (
 
 func (h *handler) getProjectID(projectHelmChart *v1alpha1.ProjectHelmChart) (string, error) {
 	if len(h.opts.ProjectLabel) == 0 {
-		return "", nil
+		// use the projectHelmChart's name as the projectID
+		return projectHelmChart.Name, nil
 	}
 	projectRegistrationNamespace, err := h.namespaceCache.Get(projectHelmChart.Namespace)
 	if err != nil {
