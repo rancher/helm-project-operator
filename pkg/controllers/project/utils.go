@@ -55,12 +55,9 @@ func (h *handler) getReleaseNamespaceAndName(projectHelmChart *v1alpha1.ProjectH
 		// This changes the naming scheme of the deployed resources such that only one can every be created per namespace
 		projectReleaseName = fmt.Sprintf("%s-%s", projectHelmChart.Namespace, h.opts.ReleaseName)
 	}
-	if len(h.opts.ProjectLabel) == 0 {
-		// Underlying Helm releases will all be created in the same namespace
-		return h.systemNamespace, projectReleaseName
-	}
-	if len(h.opts.SystemProjectLabelValue) == 0 {
-		// Underlying Helm releases will be created in the project registration namespace where the ProjectHelmChart is registered
+	if len(h.opts.ProjectLabel) == 0 || len(h.opts.SystemProjectLabelValue) == 0 {
+		// Underlying Helm releases will be created in the namespace where the ProjectHelmChart is registered (project registration namespace)
+		// The project registration namespace will either be the system namespace or auto-generated namespaces depending on the user values provided
 		return projectHelmChart.Namespace, projectReleaseName
 	}
 	// Underlying Helm releases will be created in dedicated project release namespaces
