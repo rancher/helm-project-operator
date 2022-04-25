@@ -30,13 +30,6 @@ func (h *handler) getUnableToCreateHelmReleaseStatus(projectHelmChart *v1alpha1.
 	}
 }
 
-func (h *handler) getFailedToIdentifyTargetNamespacesStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
-	return v1alpha1.ProjectHelmChartStatus{
-		Status:        "UnableToIdentifyTargetNamespaces",
-		StatusMessage: fmt.Sprintf("Unable to find project namespaces to deploy ProjectHelmChart: %s", err),
-	}
-}
-
 func (h *handler) getNoTargetNamespacesStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
 	return v1alpha1.ProjectHelmChartStatus{
 		Status:        "NoTargetProjectNamespaces",
@@ -51,29 +44,16 @@ func (h *handler) getValuesParseErrorStatus(projectHelmChart *v1alpha1.ProjectHe
 	return projectHelmChartStatus
 }
 
-func (h *handler) getFailedToDefineReleaseRBACStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
-	// retain existing status if possible
-	projectHelmChartStatus.Status = "UnableToDefineRBAC"
-	projectHelmChartStatus.StatusMessage = fmt.Sprintf("Unable to define RBAC in the project release namespace: %s", err)
+func (h *handler) getWaitingForDashboardValuesStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
+	// retain existing status
+	projectHelmChartStatus.Status = "WaitingForDashboardValues"
+	projectHelmChartStatus.StatusMessage = "Waiting for status.dashboardValues content to be provided by the deployed Helm release, but HelmChart and HelmRelease should be deployed."
+	projectHelmChartStatus.DashboardValues = nil
 	return projectHelmChartStatus
 }
 
 func (h *handler) getDeployedStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
-	dashboardValues, err := h.getDashboardValuesFromConfigmaps(projectHelmChart)
-	if err != nil {
-		// retain existing status
-		projectHelmChartStatus.Status = "UnableToParseStatus"
-		projectHelmChartStatus.StatusMessage = "Unable to parse status for status.dashboardValues, but HelmChart and HelmRelease should be deployed."
-		return projectHelmChartStatus
-	}
-	if len(dashboardValues) == 0 {
-		// retain existing status
-		projectHelmChartStatus.Status = "WaitingForDashboardValues"
-		projectHelmChartStatus.StatusMessage = "Waiting for status.dashboardValues content to be provided by the deployed Helm release, but HelmChart and HelmRelease should be deployed."
-		return projectHelmChartStatus
-	}
 	// retain existing status
-	projectHelmChartStatus.DashboardValues = dashboardValues
 	projectHelmChartStatus.Status = "Deployed"
 	projectHelmChartStatus.StatusMessage = "ProjectHelmChart has been successfully deployed!"
 	return projectHelmChartStatus

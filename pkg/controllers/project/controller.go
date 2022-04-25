@@ -168,9 +168,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	// check if the releaseName is already tracked by another ProjectHelmChart
 	projectHelmCharts, err := h.projectHelmChartCache.GetByIndex(ProjectHelmChartByReleaseName, releaseName)
 	if err != nil {
-		err = fmt.Errorf("unable to get ProjectHelmCharts to verify if release is already tracked: %s", err)
-		projectHelmChartStatus = h.getUnableToCreateHelmReleaseStatus(projectHelmChart, projectHelmChartStatus, err)
-		return nil, projectHelmChartStatus, err
+		return nil, projectHelmChartStatus, fmt.Errorf("unable to get ProjectHelmCharts to verify if release is already tracked: %s", err)
 	}
 	for _, conflictingProjectHelmChart := range projectHelmCharts {
 		if conflictingProjectHelmChart == nil {
@@ -195,7 +193,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 			releaseName, releaseNamespace,
 		)
 		projectHelmChartStatus = h.getUnableToCreateHelmReleaseStatus(projectHelmChart, projectHelmChartStatus, err)
-		return nil, projectHelmChartStatus, err
+		return nil, projectHelmChartStatus, nil
 	}
 
 	// set basic statuses
@@ -206,8 +204,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	// gather target project namespaces
 	targetProjectNamespaces, err := h.projectGetter.GetTargetProjectNamespaces(projectHelmChart)
 	if err != nil {
-		projectHelmChartStatus = h.getFailedToIdentifyTargetNamespacesStatus(projectHelmChart, projectHelmChartStatus, err)
-		return nil, projectHelmChartStatus, fmt.Errorf("unable to get target project namespaces for projectHelmChart %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Name, err)
+		return nil, projectHelmChartStatus, fmt.Errorf("unable to find project namespaces to deploy ProjectHelmChart: %s", err)
 	}
 	if len(targetProjectNamespaces) == 0 {
 		projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, true, projectHelmChart)
@@ -231,34 +228,41 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	values := h.getValues(projectHelmChart, projectID, targetProjectNamespaces)
 	valuesContentBytes, err := values.ToYAML()
 	if err != nil {
-		err = fmt.Errorf("unable to marshall spec.values of %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Name, err)
+		err = fmt.Errorf("unable to marshall spec.values: %s", err)
 		projectHelmChartStatus = h.getValuesParseErrorStatus(projectHelmChart, projectHelmChartStatus, err)
-		return nil, projectHelmChartStatus, err
+		return nil, projectHelmChartStatus, nil
 	}
 
 	// get rolebindings that need to be created in release namespace
 	k8sRolesToRoleRefs, err := h.getK8sRoleToRoleRefsFromRoles(projectHelmChart)
 	if err != nil {
-		err = fmt.Errorf("unable to get default release roles from project release namespace %s for %s/%s: %s", releaseNamespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
-		projectHelmChartStatus = h.getFailedToDefineReleaseRBACStatus(projectHelmChart, projectHelmChartStatus, err)
-		return nil, projectHelmChartStatus, err
+		return nil, projectHelmChartStatus, fmt.Errorf("unable to get default release roles from project release namespace %s for %s/%s: %s", releaseNamespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
 	}
 	k8sRolesToSubjects, err := h.getK8sRoleToSubjectsFromRoleBindings(projectHelmChart)
 	if err != nil {
-		err = fmt.Errorf("unable to get rolebindings to default project operator roles from project registration namespace %s for %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
-		projectHelmChartStatus = h.getFailedToDefineReleaseRBACStatus(projectHelmChart, projectHelmChartStatus, err)
-		return nil, projectHelmChartStatus, err
+		return nil, projectHelmChartStatus, fmt.Errorf("unable to get rolebindings to default project operator roles from project registration namespace %s for %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
 	}
 	objs = append(objs,
 		h.getRoleBindings(projectID, k8sRolesToRoleRefs, k8sRolesToSubjects, projectHelmChart)...,
 	)
 
-	// get final status from ConfigMap and deploy
-	projectHelmChartStatus = h.getDeployedStatus(projectHelmChart, projectHelmChartStatus)
+	// append the helm chart and helm release
 	objs = append(objs,
 		h.getHelmChart(projectID, string(valuesContentBytes), projectHelmChart),
 		h.getHelmRelease(projectID, projectHelmChart),
 	)
+
+	// get dashboard values if available
+	dashboardValues, err := h.getDashboardValuesFromConfigmaps(projectHelmChart)
+	if err != nil {
+		return nil, projectHelmChartStatus, fmt.Errorf("unable to get dashboard values from status ConfigMaps: %s", err)
+	}
+	if len(dashboardValues) == 0 {
+		projectHelmChartStatus = h.getWaitingForDashboardValuesStatus(projectHelmChart, projectHelmChartStatus)
+	} else {
+		projectHelmChartStatus.DashboardValues = dashboardValues
+		projectHelmChartStatus = h.getDeployedStatus(projectHelmChart, projectHelmChartStatus)
+	}
 	return objs, projectHelmChartStatus, nil
 }
 
