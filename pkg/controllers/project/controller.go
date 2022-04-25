@@ -165,6 +165,39 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	}
 	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
 
+	// check if the releaseName is already tracked by another ProjectHelmChart
+	projectHelmCharts, err := h.projectHelmChartCache.GetByIndex(ProjectHelmChartByReleaseName, releaseName)
+	if err != nil {
+		err = fmt.Errorf("unable to get ProjectHelmCharts to verify if release is already tracked: %s", err)
+		projectHelmChartStatus = h.getUnableToCreateHelmReleaseStatus(projectHelmChart, projectHelmChartStatus, err)
+		return nil, projectHelmChartStatus, err
+	}
+	for _, conflictingProjectHelmChart := range projectHelmCharts {
+		if conflictingProjectHelmChart == nil {
+			continue
+		}
+		if projectHelmChart.Name == conflictingProjectHelmChart.Name && projectHelmChart.Namespace == conflictingProjectHelmChart.Namespace {
+			// looking at the same projectHelmChart that we have at hand
+			continue
+		}
+		if len(conflictingProjectHelmChart.Status.Status) == 0 {
+			// the other ProjectHelmChart hasn't been processed yet, so let it fail out whenever it is processed
+			continue
+		}
+		if conflictingProjectHelmChart.Status.Status == "UnableToCreateHelmRelease" {
+			// the other ProjectHelmChart is the one that will not be able to progress, so we can continue to update this one
+			continue
+		}
+		// we have found another ProjectHelmChart that already exists and is tracking this release with some non-conflicting status
+		err = fmt.Errorf(
+			"ProjectHelmChart %s/%s already tracks release %s/%s",
+			conflictingProjectHelmChart.Namespace, conflictingProjectHelmChart.Name,
+			releaseName, releaseNamespace,
+		)
+		projectHelmChartStatus = h.getUnableToCreateHelmReleaseStatus(projectHelmChart, projectHelmChartStatus, err)
+		return nil, projectHelmChartStatus, err
+	}
+
 	// set basic statuses
 	projectHelmChartStatus.SystemNamespace = h.systemNamespace
 	projectHelmChartStatus.ReleaseNamespace = releaseNamespace

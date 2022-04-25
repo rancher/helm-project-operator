@@ -19,6 +19,17 @@ func (h *handler) getCleanupStatus(projectHelmChart *v1alpha1.ProjectHelmChart, 
 	}
 }
 
+func (h *handler) getUnableToCreateHelmReleaseStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
+	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
+	return v1alpha1.ProjectHelmChartStatus{
+		Status: "UnableToCreateHelmRelease",
+		StatusMessage: fmt.Sprintf(
+			"Unable to create a release (%s/%s) for ProjectHelmChart: %s",
+			releaseName, releaseNamespace, err,
+		),
+	}
+}
+
 func (h *handler) getFailedToIdentifyTargetNamespacesStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
 	return v1alpha1.ProjectHelmChartStatus{
 		Status:        "UnableToIdentifyTargetNamespaces",
