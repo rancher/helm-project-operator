@@ -2,9 +2,14 @@ package common
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/sirupsen/logrus"
 )
+
+type HTTPRequestMux interface {
+	Handle(pattern string, handler http.Handler)
+}
 
 // Options defines options that can be set on initializing the HelmProjectOperator
 type Options struct {
@@ -13,6 +18,10 @@ type Options struct {
 	SystemNamespaces []string
 	ChartContent     string
 	Singleton        bool
+
+	// HTTPRequestMux is the HTTP request multiplexer to register the /healthz endpoint at
+	// If it is not provided, it is assumed the mux is http.DefaultServeMux
+	HTTPRequestMux HTTPRequestMux
 
 	ProjectLabel            string
 	SystemProjectLabelValue string

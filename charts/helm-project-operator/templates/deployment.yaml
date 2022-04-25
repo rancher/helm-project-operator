@@ -51,6 +51,15 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: spec.nodeName
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 30
 {{- if .Values.resources }}
           resources: {{ toYaml .Values.resources | nindent 12 }}
 {{- end }}

@@ -39,7 +39,8 @@ type DummyOperator struct {
 
 func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
+		// required to set up healthz and pprof handlers
+		log.Println(http.ListenAndServe("localhost:80", nil))
 	}()
 	debugConfig.MustSetupDebug()
 

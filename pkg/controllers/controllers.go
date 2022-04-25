@@ -11,6 +11,7 @@ import (
 	helmlockercontrollers "github.com/aiyengar2/helm-locker/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-locker/pkg/objectset"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
+	"github.com/aiyengar2/helm-project-operator/pkg/controllers/health"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/namespace"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/project"
 	rolebinding "github.com/aiyengar2/helm-project-operator/pkg/controllers/rolebindings"
@@ -99,6 +100,8 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		Host:      opts.NodeName,
 	})
 
+	probeSetter := health.Register(opts)
+
 	subjectRoleGetter := rolebinding.Register(
 		ctx,
 		// watches
@@ -180,6 +183,7 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		if err := appCtx.start(ctx); err != nil {
 			logrus.Fatal(err)
 		}
+		probeSetter.SetReady() // sets up readiness probe if http server is configured for operator
 		logrus.Info("All controllers have been started")
 	})
 
