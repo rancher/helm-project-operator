@@ -12,6 +12,16 @@ global:
     systemProjectId: ""
     url: ""
   rbac:
+    ## Create RBAC resources for ServiceAccounts and users
+    ##
+    create: true
+
+    userRoles:
+      ## Create default user ClusterRoles to allow users to interact with ProjectHelmCharts
+      create: true
+      ## Aggregate default user ClusterRoles into default k8s ClusterRoles
+      aggregateToDefaultRoles: true
+
     pspEnabled: true
     pspAnnotations: {}
       ## Specify pod annotations
