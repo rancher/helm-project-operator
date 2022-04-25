@@ -70,7 +70,7 @@ func (h *handler) getRoleBindings(projectID string, k8sRoleToRoleRefs map[string
 	var objs []runtime.Object
 	releaseNamespace, _ := h.getReleaseNamespaceAndName(projectHelmChart)
 
-	for _, k8sRole := range common.DefaultK8sRoles {
+	for _, k8sRole := range common.GetDefaultClusterRoles(h.opts) {
 		// note: these role refs point to roles in the release namespace
 		roleRefs := k8sRoleToRoleRefs[k8sRole]
 		// note: these subjects are inferred from the rolebindings tied to the default roles in the registration namespace

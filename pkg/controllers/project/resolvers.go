@@ -33,7 +33,7 @@ func (h *handler) initResolvers(ctx context.Context) {
 
 	relatedresource.Watch(
 		ctx, "watch-project-registration-chart-data", h.resolveProjectRegistrationNamespaceData, h.projectHelmCharts,
-		h.rolebindings,
+		h.rolebindings, h.clusterrolebindings,
 	)
 
 	relatedresource.Watch(
@@ -81,6 +81,19 @@ func (h *handler) resolveSystemNamespaceData(namespace, name string, obj runtime
 // Project Registration Namespace Data
 
 func (h *handler) resolveProjectRegistrationNamespaceData(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	if obj == nil {
+		return nil, nil
+	}
+	if rb, ok := obj.(*rbacv1.RoleBinding); ok {
+		return h.resolveProjectRegistrationNamespaceRoleBinding(namespace, name, rb)
+	}
+	if crb, ok := obj.(*rbacv1.ClusterRoleBinding); ok {
+		return h.resolveClusterRoleBinding(namespace, name, crb)
+	}
+	return nil, nil
+}
+
+func (h *handler) resolveProjectRegistrationNamespaceRoleBinding(namespace, name string, rb *rbacv1.RoleBinding) ([]relatedresource.Key, error) {
 	isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(namespace)
 	if err != nil {
 		return nil, err
@@ -88,18 +101,8 @@ func (h *handler) resolveProjectRegistrationNamespaceData(namespace, name string
 	if !isProjectRegistrationNamespace {
 		return nil, nil
 	}
-	if obj == nil {
-		return nil, nil
-	}
-	if rb, ok := obj.(*rbacv1.RoleBinding); ok {
-		return h.resolveProjectRegistrationNamespaceRoleBinding(namespace, name, rb)
-	}
-	return nil, nil
-}
-
-func (h *handler) resolveProjectRegistrationNamespaceRoleBinding(namespace, name string, rb *rbacv1.RoleBinding) ([]relatedresource.Key, error) {
 	// we want to re-enqueue the ProjectHelmChart if the rolebinding's ref points to one of the operator default roles
-	_, isDefaultRoleRef := common.GetK8sRoleFromOperatorDefaultRoleName(h.opts.ReleaseName, rb.RoleRef.Name)
+	_, isDefaultRoleRef := common.GetK8sRoleFromOperatorDefaultRoleName(h.opts, rb.RoleRef.Name)
 	if !isDefaultRoleRef {
 		return nil, nil
 	}
@@ -117,6 +120,46 @@ func (h *handler) resolveProjectRegistrationNamespaceRoleBinding(namespace, name
 			Namespace: namespace,
 			Name:      projectHelmChart.Name,
 		})
+	}
+	return keys, nil
+}
+
+func (h *handler) resolveClusterRoleBinding(namespace, name string, crb *rbacv1.ClusterRoleBinding) ([]relatedresource.Key, error) {
+	// we want to re-enqueue the ProjectHelmChart if the rolebinding's ref points to one of the operator default roles
+	_, isDefaultRoleRef := common.GetK8sRoleFromOperatorDefaultRoleName(h.opts, crb.RoleRef.Name)
+	if !isDefaultRoleRef {
+		return nil, nil
+	}
+	// re-enqueue all HelmCharts in all Project Registration namespaces
+	namespaces, err := h.namespaceCache.List(labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+	var keys []relatedresource.Key
+	for _, namespace := range namespaces {
+		if namespace == nil {
+			continue
+		}
+		isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(namespace.Name)
+		if err != nil {
+			return nil, err
+		}
+		if !isProjectRegistrationNamespace {
+			continue
+		}
+		projectHelmCharts, err := h.projectHelmChartCache.List(namespace.Name, labels.Everything())
+		if err != nil {
+			return nil, err
+		}
+		for _, projectHelmChart := range projectHelmCharts {
+			if projectHelmChart == nil {
+				continue
+			}
+			keys = append(keys, relatedresource.Key{
+				Namespace: projectHelmChart.Namespace,
+				Name:      projectHelmChart.Name,
+			})
+		}
 	}
 	return keys, nil
 }

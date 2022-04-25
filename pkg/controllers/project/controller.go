@@ -24,22 +24,24 @@ var (
 )
 
 type handler struct {
-	systemNamespace       string
-	opts                  common.Options
-	apply                 apply.Apply
-	projectHelmCharts     helmproject.ProjectHelmChartController
-	projectHelmChartCache helmproject.ProjectHelmChartCache
-	configmaps            corecontrollers.ConfigMapController
-	configmapCache        corecontrollers.ConfigMapCache
-	roles                 rbacv1.RoleController
-	roleCache             rbacv1.RoleCache
-	helmCharts            helm.HelmChartController
-	helmReleases          helmlocker.HelmReleaseController
-	namespaces            corecontrollers.NamespaceController
-	namespaceCache        corecontrollers.NamespaceCache
-	rolebindings          rbacv1.RoleBindingController
-	rolebindingCache      rbacv1.RoleBindingCache
-	projectGetter         namespace.ProjectGetter
+	systemNamespace         string
+	opts                    common.Options
+	apply                   apply.Apply
+	projectHelmCharts       helmproject.ProjectHelmChartController
+	projectHelmChartCache   helmproject.ProjectHelmChartCache
+	configmaps              corecontrollers.ConfigMapController
+	configmapCache          corecontrollers.ConfigMapCache
+	roles                   rbacv1.RoleController
+	roleCache               rbacv1.RoleCache
+	clusterrolebindings     rbacv1.ClusterRoleBindingController
+	clusterrolebindingCache rbacv1.ClusterRoleBindingCache
+	helmCharts              helm.HelmChartController
+	helmReleases            helmlocker.HelmReleaseController
+	namespaces              corecontrollers.NamespaceController
+	namespaceCache          corecontrollers.NamespaceCache
+	rolebindings            rbacv1.RoleBindingController
+	rolebindingCache        rbacv1.RoleBindingCache
+	projectGetter           namespace.ProjectGetter
 }
 
 func Register(
@@ -53,6 +55,8 @@ func Register(
 	configmapCache corecontrollers.ConfigMapCache,
 	roles rbacv1.RoleController,
 	roleCache rbacv1.RoleCache,
+	clusterrolebindings rbacv1.ClusterRoleBindingController,
+	clusterrolebindingCache rbacv1.ClusterRoleBindingCache,
 	helmCharts helm.HelmChartController,
 	helmReleases helmlocker.HelmReleaseController,
 	namespaces corecontrollers.NamespaceController,
@@ -72,22 +76,24 @@ func Register(
 		WithNoDeleteGVK(namespaces.GroupVersionKind())
 
 	h := &handler{
-		systemNamespace:       systemNamespace,
-		opts:                  opts,
-		apply:                 apply,
-		projectHelmCharts:     projectHelmCharts,
-		projectHelmChartCache: projectHelmChartCache,
-		configmaps:            configmaps,
-		configmapCache:        configmapCache,
-		roles:                 roles,
-		roleCache:             roleCache,
-		helmCharts:            helmCharts,
-		helmReleases:          helmReleases,
-		namespaces:            namespaces,
-		namespaceCache:        namespaceCache,
-		rolebindings:          rolebindings,
-		rolebindingCache:      rolebindingCache,
-		projectGetter:         projectGetter,
+		systemNamespace:         systemNamespace,
+		opts:                    opts,
+		apply:                   apply,
+		projectHelmCharts:       projectHelmCharts,
+		projectHelmChartCache:   projectHelmChartCache,
+		configmaps:              configmaps,
+		configmapCache:          configmapCache,
+		roles:                   roles,
+		clusterrolebindings:     clusterrolebindings,
+		clusterrolebindingCache: clusterrolebindingCache,
+		roleCache:               roleCache,
+		helmCharts:              helmCharts,
+		helmReleases:            helmReleases,
+		namespaces:              namespaces,
+		namespaceCache:          namespaceCache,
+		rolebindings:            rolebindings,
+		rolebindingCache:        rolebindingCache,
+		projectGetter:           projectGetter,
 	}
 
 	h.initIndexers()
@@ -236,9 +242,9 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	// get rolebindings that need to be created in release namespace
 	k8sRolesToRoleRefs, err := h.getK8sRoleToRoleRefsFromRoles(projectHelmChart)
 	if err != nil {
-		return nil, projectHelmChartStatus, fmt.Errorf("unable to get default release roles from project release namespace %s for %s/%s: %s", releaseNamespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
+		return nil, projectHelmChartStatus, fmt.Errorf("unable to get release roles from project release namespace %s for %s/%s: %s", releaseNamespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
 	}
-	k8sRolesToSubjects, err := h.getK8sRoleToSubjectsFromRoleBindings(projectHelmChart)
+	k8sRolesToSubjects, err := h.getK8sRoleToSubjectsFromBindings(projectHelmChart)
 	if err != nil {
 		return nil, projectHelmChartStatus, fmt.Errorf("unable to get rolebindings to default project operator roles from project registration namespace %s for %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
 	}

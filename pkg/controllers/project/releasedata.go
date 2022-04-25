@@ -51,8 +51,12 @@ func (h *handler) getDashboardValuesFromConfigmaps(projectHelmChart *v1alpha1.Pr
 
 func (h *handler) getK8sRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbac.RoleRef, error) {
 	k8sRoleToRoleRefs := make(map[string][]rbac.RoleRef)
-	for _, k8sRole := range common.DefaultK8sRoles {
+	for _, k8sRole := range common.GetDefaultClusterRoles(h.opts) {
 		k8sRoleToRoleRefs[k8sRole] = []rbac.RoleRef{}
+	}
+	if len(k8sRoleToRoleRefs) == 0 {
+		// no roles were defined to be auto-aggregated
+		return k8sRoleToRoleRefs, nil
 	}
 	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
 	exists, err := h.verifyReleaseNamespaceExists(releaseNamespace)

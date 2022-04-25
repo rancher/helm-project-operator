@@ -14,7 +14,6 @@ import (
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/health"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/namespace"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/project"
-	rolebinding "github.com/aiyengar2/helm-project-operator/pkg/controllers/rolebindings"
 	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io"
 	"github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
@@ -102,21 +101,6 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 
 	probeSetter := health.Register(opts)
 
-	var subjectRoleGetter rolebinding.SubjectRoleGetter
-	if !opts.DisableRBACAggregation {
-		subjectRoleGetter = rolebinding.Register(
-			ctx,
-			// watches
-			appCtx.RBAC.RoleBinding(),
-			appCtx.RBAC.ClusterRoleBinding(),
-			// enqueues
-			appCtx.Core.Namespace(),
-			appCtx.Core.Namespace().Cache(),
-		)
-	} else {
-		subjectRoleGetter = rolebinding.NewNoopSubjectRoleGetter()
-	}
-
 	projectGetter := namespace.Register(ctx,
 		appCtx.Apply,
 		systemNamespace,
@@ -127,13 +111,10 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.Core.Namespace(),
 		appCtx.Core.Namespace().Cache(),
 		appCtx.Core.ConfigMap(),
-		appCtx.RBAC.Role(),
-		appCtx.RBAC.RoleBinding(),
 		// enqueues
 		appCtx.ProjectHelmChart(),
 		appCtx.ProjectHelmChart().Cache(),
 		appCtx.Dynamic,
-		subjectRoleGetter,
 	)
 
 	project.Register(ctx,
@@ -147,6 +128,8 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.Core.ConfigMap().Cache(),
 		appCtx.RBAC.Role(),
 		appCtx.RBAC.Role().Cache(),
+		appCtx.RBAC.ClusterRoleBinding(),
+		appCtx.RBAC.ClusterRoleBinding().Cache(),
 		// watches and generates
 		appCtx.HelmController.HelmChart(),
 		appCtx.HelmLocker.HelmRelease(),
