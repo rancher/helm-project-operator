@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/aiyengar2/helm-locker/pkg/controllers/release"
@@ -175,14 +176,11 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.Core.ServiceAccount(),
 		appCtx.Core.ConfigMap())
 
-	// must acquire all locks in order to start controllers
-	leader.RunOrDie(ctx, systemNamespace, "helm-controller-lock", appCtx.K8s, func(ctx context.Context) {
-		leader.RunOrDie(ctx, systemNamespace, "helm-locker-lock", appCtx.K8s, func(ctx context.Context) {
-			if err := appCtx.start(ctx); err != nil {
-				logrus.Fatal(err)
-			}
-			logrus.Info("All controllers have been started")
-		})
+	leader.RunOrDie(ctx, systemNamespace, fmt.Sprintf("helm-project-operator-%s-lock", opts.ReleaseName), appCtx.K8s, func(ctx context.Context) {
+		if err := appCtx.start(ctx); err != nil {
+			logrus.Fatal(err)
+		}
+		logrus.Info("All controllers have been started")
 	})
 
 	return nil
