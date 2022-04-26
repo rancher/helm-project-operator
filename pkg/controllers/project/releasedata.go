@@ -49,14 +49,14 @@ func (h *handler) getDashboardValuesFromConfigmaps(projectHelmChart *v1alpha1.Pr
 	return values, nil
 }
 
-func (h *handler) getK8sRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbac.RoleRef, error) {
-	k8sRoleToRoleRefs := make(map[string][]rbac.RoleRef)
-	for _, k8sRole := range common.GetDefaultClusterRoles(h.opts) {
-		k8sRoleToRoleRefs[k8sRole] = []rbac.RoleRef{}
+func (h *handler) getSubjectRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbac.RoleRef, error) {
+	subjectRoleToRoleRefs := make(map[string][]rbac.RoleRef)
+	for subjectRole := range common.GetDefaultClusterRoles(h.opts) {
+		subjectRoleToRoleRefs[subjectRole] = []rbac.RoleRef{}
 	}
-	if len(k8sRoleToRoleRefs) == 0 {
+	if len(subjectRoleToRoleRefs) == 0 {
 		// no roles were defined to be auto-aggregated
-		return k8sRoleToRoleRefs, nil
+		return subjectRoleToRoleRefs, nil
 	}
 	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
 	exists, err := h.verifyReleaseNamespaceExists(releaseNamespace)
@@ -74,23 +74,23 @@ func (h *handler) getK8sRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.Proje
 		if role == nil {
 			continue
 		}
-		k8sRole, ok := role.Labels[common.HelmProjectOperatorProjectHelmChartRoleAggregateFromLabel]
+		subjectRole, ok := role.Labels[common.HelmProjectOperatorProjectHelmChartRoleAggregateFromLabel]
 		if !ok {
 			// cannot assign roles if this label is not provided
 			continue
 		}
-		roleRefs, ok := k8sRoleToRoleRefs[k8sRole]
+		roleRefs, ok := subjectRoleToRoleRefs[subjectRole]
 		if !ok {
-			// label value is invalid since it does not point to default k8s role name
+			// label value is invalid since it does not point to default subject role name
 			continue
 		}
-		k8sRoleToRoleRefs[k8sRole] = append(roleRefs, rbac.RoleRef{
+		subjectRoleToRoleRefs[subjectRole] = append(roleRefs, rbac.RoleRef{
 			APIGroup: rbac.GroupName,
 			Kind:     "Role",
 			Name:     role.Name,
 		})
 	}
-	return k8sRoleToRoleRefs, nil
+	return subjectRoleToRoleRefs, nil
 }
 
 func (h *handler) verifyReleaseNamespaceExists(releaseNamespace string) (bool, error) {

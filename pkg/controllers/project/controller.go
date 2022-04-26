@@ -252,11 +252,11 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	}
 
 	// get rolebindings that need to be created in release namespace
-	k8sRolesToRoleRefs, err := h.getK8sRoleToRoleRefsFromRoles(projectHelmChart)
+	k8sRolesToRoleRefs, err := h.getSubjectRoleToRoleRefsFromRoles(projectHelmChart)
 	if err != nil {
 		return nil, projectHelmChartStatus, fmt.Errorf("unable to get release roles from project release namespace %s for %s/%s: %s", releaseNamespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
 	}
-	k8sRolesToSubjects, err := h.getK8sRoleToSubjectsFromBindings(projectHelmChart)
+	k8sRolesToSubjects, err := h.getSubjectRoleToSubjectsFromBindings(projectHelmChart)
 	if err != nil {
 		return nil, projectHelmChartStatus, fmt.Errorf("unable to get rolebindings to default project operator roles from project registration namespace %s for %s/%s: %s", projectHelmChart.Namespace, projectHelmChart.Namespace, projectHelmChart.Name, err)
 	}

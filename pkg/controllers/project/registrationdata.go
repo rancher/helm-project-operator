@@ -10,16 +10,16 @@ import (
 
 // Note: each resource created here should have a resolver set in resolvers.go
 
-func (h *handler) getK8sRoleToSubjectsFromBindings(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbac.Subject, error) {
+func (h *handler) getSubjectRoleToSubjectsFromBindings(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbac.Subject, error) {
 	defaultClusterRoles := common.GetDefaultClusterRoles(h.opts)
-	k8sRoleToSubjects := make(map[string][]rbac.Subject)
-	k8sRoleToSubjectMap := make(map[string]map[string]rbac.Subject)
+	subjectRoleToSubjects := make(map[string][]rbac.Subject)
+	subjectRoleToSubjectMap := make(map[string]map[string]rbac.Subject)
 	if len(defaultClusterRoles) == 0 {
 		// no roles to get get subjects for
-		return k8sRoleToSubjects, nil
+		return subjectRoleToSubjects, nil
 	}
-	for _, k8sRole := range defaultClusterRoles {
-		k8sRoleToSubjectMap[k8sRole] = make(map[string]rbac.Subject)
+	for subjectRole := range defaultClusterRoles {
+		subjectRoleToSubjectMap[subjectRole] = make(map[string]rbac.Subject)
 	}
 	roleBindings, err := h.rolebindingCache.GetByIndex(
 		RoleBindingInRegistrationNamespaceByRoleRef,
@@ -32,12 +32,12 @@ func (h *handler) getK8sRoleToSubjectsFromBindings(projectHelmChart *v1alpha1.Pr
 		if rb == nil {
 			continue
 		}
-		k8sRole, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, rb.RoleRef.Name)
+		subjectRole, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, rb.RoleRef.Name)
 		if !isDefaultRoleRef {
 			continue
 		}
 		filteredSubjects := common.FilterToUsersAndGroups(rb.Subjects)
-		currSubjects := k8sRoleToSubjectMap[k8sRole]
+		currSubjects := subjectRoleToSubjectMap[subjectRole]
 		for _, filteredSubject := range filteredSubjects {
 			// collect into a map to avoid putting duplicates of the same subject
 			// we use an index of kind and name since a Group can have the same name as a User, but should be considered separate
@@ -52,12 +52,12 @@ func (h *handler) getK8sRoleToSubjectsFromBindings(projectHelmChart *v1alpha1.Pr
 		if crb == nil {
 			continue
 		}
-		k8sRole, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, crb.RoleRef.Name)
+		subjectRole, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, crb.RoleRef.Name)
 		if !isDefaultRoleRef {
 			continue
 		}
 		filteredSubjects := common.FilterToUsersAndGroups(crb.Subjects)
-		currSubjects := k8sRoleToSubjectMap[k8sRole]
+		currSubjects := subjectRoleToSubjectMap[subjectRole]
 		for _, filteredSubject := range filteredSubjects {
 			// collect into a map to avoid putting duplicates of the same subject
 			// we use an index of kind and name since a Group can have the same name as a User, but should be considered separate
@@ -65,12 +65,12 @@ func (h *handler) getK8sRoleToSubjectsFromBindings(projectHelmChart *v1alpha1.Pr
 		}
 	}
 	// convert back into list so that no duplicates are created
-	for _, k8sRole := range defaultClusterRoles {
+	for subjectRole := range defaultClusterRoles {
 		subjects := []rbac.Subject{}
-		for _, subject := range k8sRoleToSubjectMap[k8sRole] {
+		for _, subject := range subjectRoleToSubjectMap[subjectRole] {
 			subjects = append(subjects, subject)
 		}
-		k8sRoleToSubjects[k8sRole] = subjects
+		subjectRoleToSubjects[subjectRole] = subjects
 	}
-	return k8sRoleToSubjects, nil
+	return subjectRoleToSubjects, nil
 }
