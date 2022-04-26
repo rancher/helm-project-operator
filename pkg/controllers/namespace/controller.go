@@ -73,7 +73,7 @@ func Register(
 
 	if len(opts.ProjectLabel) == 0 {
 		namespaces.OnChange(ctx, "on-namespace-change", h.OnSingleNamespaceChange)
-		// no need for OnRemove since if that namespace gets removed all resources in it will be deleted, including ProjectHelmCharts
+
 		return NewSingleNamespaceProjectGetter(systemNamespace, opts.SystemNamespaces, namespaces)
 	}
 
@@ -86,7 +86,6 @@ func Register(
 		WithNoDeleteGVK(namespaces.GroupVersionKind())
 
 	namespaces.OnChange(ctx, "on-namespace-change", h.OnMultiNamespaceChange)
-	namespaces.OnRemove(ctx, "on-namespace-remove", h.OnMultiNamespaceChange)
 
 	h.initSystemNamespaces(h.opts.SystemNamespaces, h.systemNamespaceRegister)
 

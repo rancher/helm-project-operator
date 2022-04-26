@@ -9,7 +9,7 @@ import (
 )
 
 // Note: each resource created in resources.go should have a resolver handler here
-// The only exception is namespaces since those are handled by the main controller OnChange and OnRemove
+// The only exception is namespaces since those are handled by the main controller OnChange
 
 func (h *handler) initResolvers(ctx context.Context) {
 	relatedresource.WatchClusterScoped(

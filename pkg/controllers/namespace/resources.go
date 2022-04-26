@@ -10,7 +10,7 @@ import (
 )
 
 // Note: each resource created here should have a resolver set in resolvers.go
-// The only exception is namespaces since those are handled by the main controller OnChange and OnRemove
+// The only exception is namespaces since those are handled by the main controller OnChange
 
 func (h *handler) getProjectRegistrationNamespace(projectID string, isOrphaned bool, namespace *v1.Namespace) *v1.Namespace {
 	return &v1.Namespace{

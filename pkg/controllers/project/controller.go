@@ -110,12 +110,24 @@ func Register(
 			AllowClusterScoped: true,
 		})
 
-	if len(h.opts.ProjectLabel) != 0 && len(h.opts.SystemProjectLabelValue) != 0 {
-		// OnRemove logic here ensures that release namespaces are marked as orphaned on removing all ProjectHelmCharts
-		// However, release namespaces are only created if both --project-label and --system-project-label-value are provided,
-		// so unless both are provided, we do not need to register this handler
-		projectHelmCharts.OnRemove(ctx, "ensure-project-release-namespace-orphaned", h.OnRemove)
-	}
+	// Note: why do we create an OnChange handler for an OnRemove function?
+	//
+	// The OnRemove handler creates an objectLifecycleAdapter that adds a Kubernetes
+	// finalizer to the object in question to ensure that the handler that we run
+	// gets applied **before** the object gets deleted. However, using finalizers
+	// ends up adding the finalizers to all objects and, in this particular case,
+	// we don't care whether the action happens **pre**-delete or **post**-delete.
+	//
+	// Therefore, to avoid creating any finalizers, we simply register this OnRemove
+	// handler as an OnChange handler.
+	//
+	// Note: why can't this be handled by the GeneratingHandler?
+	// The GeneratingHandler is built to not run the handler provided if the object's
+	// deletion timestamp is zero (since the design of the GeneratingHandler assumes)
+	// that all objects are cleaned up on deleting the parent object; the concept of
+	// orphaned child objects is not part of its pattern). Therefore, we need to run
+	// our OnRemove logic as a separate handler.
+	projectHelmCharts.OnChange(ctx, "project-helm-chart-removal", h.OnRemove)
 
 	err := h.initRemoveCleanupLabels()
 	if err != nil {
@@ -273,18 +285,13 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 }
 
 func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmChart) (*v1alpha1.ProjectHelmChart, error) {
-	// initial checks to see if we should handle this
-	shouldHandle, err := h.shouldHandle(projectHelmChart)
-	if err != nil {
-		return projectHelmChart, err
-	}
-	if !shouldHandle {
+	if projectHelmChart == nil {
 		return projectHelmChart, nil
 	}
 	if projectHelmChart.DeletionTimestamp == nil {
-		return nil, nil
+		// only apply on deleted objects
+		return projectHelmChart, nil
 	}
-
 	// get information about the projectHelmChart
 	projectID, err := h.getProjectID(projectHelmChart)
 	if err != nil {
@@ -294,6 +301,10 @@ func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmCha
 	// Get orphaned release namsepace and apply it; if another ProjectHelmChart exists in this namespace, it will automatically remove
 	// the orphaned label on enqueuing the namespace since that will enqueue all ProjectHelmCharts associated with it
 	projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, true, projectHelmChart)
+	if projectReleaseNamespace == nil {
+		// nothing to be done since this operator does not create project release namespaces
+		return projectHelmChart, nil
+	}
 
 	// Why aren't we modifying the set ID or owner here?
 	// Since this applier runs without deleting objects whose GVKs indicate that they are namespaces,
