@@ -52,6 +52,11 @@ spec:
 {{- end }}
 {{- end }}
 {{- end }}
+{{- if .Values.hardenedNamespaces.enabled }}
+          - --hardening-options-file=/etc/helmprojectoperator/config/hardening.yaml
+{{- else }}
+          - --disable-hardening
+{{- end }}
 {{- if .Values.debug }}
           - --debug
           - --debug-level={{ .Values.debugLevel }}
@@ -67,6 +72,11 @@ spec:
 {{- if .Values.resources }}
           resources: {{ toYaml .Values.resources | nindent 12 }}
 {{- end }}
+{{- if .Values.hardenedNamespaces.enabled }}
+          volumeMounts:
+          - name: config
+            mountPath: "/etc/helmprojectoperator/config"
+{{- end }}
       serviceAccountName: {{ template "helm-project-operator.name" . }}
 {{- if .Values.securityContext }}
       securityContext: {{ toYaml .Values.securityContext | indent 8 }}
@@ -78,4 +88,10 @@ spec:
       tolerations: {{ include "linux-node-tolerations" . | nindent 8 }} 
 {{- if .Values.tolerations }}
 {{- toYaml .Values.tolerations | nindent 8 }}
+{{- end }}
+{{- if .Values.hardenedNamespaces.enabled }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "helm-project-operator.name" . }}-hardened
 {{- end }}

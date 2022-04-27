@@ -11,6 +11,7 @@ import (
 	helmlockercontrollers "github.com/aiyengar2/helm-locker/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-locker/pkg/objectset"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
+	"github.com/aiyengar2/helm-project-operator/pkg/controllers/hardened"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/namespace"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/project"
 	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io"
@@ -26,6 +27,8 @@ import (
 	batchcontrollers "github.com/rancher/wrangler/pkg/generated/controllers/batch/v1"
 	"github.com/rancher/wrangler/pkg/generated/controllers/core"
 	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	"github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io"
+	networkingcontrollers "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io/v1"
 	rbac "github.com/rancher/wrangler/pkg/generated/controllers/rbac"
 	rbaccontrollers "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/pkg/generic"
@@ -48,9 +51,10 @@ import (
 type appContext struct {
 	v1alpha1.Interface
 
-	Dynamic dynamic.Interface
-	K8s     kubernetes.Interface
-	Core    corecontrollers.Interface
+	Dynamic    dynamic.Interface
+	K8s        kubernetes.Interface
+	Core       corecontrollers.Interface
+	Networking networkingcontrollers.Interface
 
 	HelmLocker        helmlockercontrollers.Interface
 	ObjectSetRegister objectset.LockableObjectSetRegister
@@ -97,6 +101,23 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		Component: "helm-project-operator",
 		Host:      opts.NodeName,
 	})
+
+	if !opts.DisableHardening {
+		hardeningOpts, err := common.LoadHardeningOptionsFromFile(opts.HardeningOptionsFile)
+		if err != nil {
+			return err
+		}
+		hardened.Register(ctx,
+			appCtx.Apply,
+			hardeningOpts,
+			// watches
+			appCtx.Core.Namespace(),
+			appCtx.Core.Namespace().Cache(),
+			// generates
+			appCtx.Core.ServiceAccount(),
+			appCtx.Networking.NetworkPolicy(),
+		)
+	}
 
 	projectGetter := namespace.Register(ctx,
 		appCtx.Apply,
@@ -227,6 +248,14 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 	}
 	corev := core.Core().V1()
 
+	networking, err := networking.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
+		SharedControllerFactory: scf,
+	})
+	if err != nil {
+		return nil, err
+	}
+	networkingv := networking.Networking().V1()
+
 	// Helm Project Controller
 
 	var namespace string // by default, this is unset so we watch everything
@@ -289,9 +318,10 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 	return &appContext{
 		Interface: helmprojectv,
 
-		Dynamic: dynamic,
-		K8s:     k8s,
-		Core:    corev,
+		Dynamic:    dynamic,
+		K8s:        k8s,
+		Core:       corev,
+		Networking: networkingv,
 
 		HelmLocker:        helmlockerv,
 		ObjectSetRegister: objectSetRegister,
@@ -307,6 +337,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 		ClientConfig: cfg,
 		starters: []start.Starter{
 			core,
+			networking,
 			batch,
 			rbac,
 			helm,

@@ -22,6 +22,14 @@ const (
 	HelmProjectOperatorProjectLabel = "helm.cattle.io/projectId"
 )
 
+func HasHelmProjectOperatedLabel(labels map[string]string) bool {
+	if labels == nil {
+		return false
+	}
+	_, ok := labels[HelmProjectOperatedLabel]
+	return ok
+}
+
 func GetCommonLabels(projectID string) map[string]string {
 	labels := map[string]string{
 		HelmProjectOperatedLabel: "true",

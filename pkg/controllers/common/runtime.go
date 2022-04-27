@@ -54,6 +54,22 @@ type RuntimeOptions struct {
 	// 'helm.cattle.io/project-helm-chart-role': '<helm-release>' and 'helm.cattle.io/project-helm-chart-role-aggregate-from': 'view'
 	// based on ClusterRoleBindings or RoleBindings in the Project Registration namespace tied to the provided ClusterRole, if it exists
 	ViewClusterRole string `usage:"ClusterRole tied to view users who should have permissions in the Project Release Namespace" env:"VIEW_CLUSTER_ROLE"`
+
+	// DisableHardening turns off the controller that manages the default service account and a default NetworkPolicy deployed on all
+	// namespaces marked with the Helm Project Operated Label to prevent generated namespaces from breaking a CIS 1.16 Hardened Scan by patching
+	// the default ServiceAccount and creating a default secure NetworkPolicy.
+	//
+	// ref: https://docs.rke2.io/security/cis_self_assessment16/#515
+	// ref: https://docs.rke2.io/security/cis_self_assessment16/#532
+	//
+	// To configure the default ServiceAccount and NetworkPolicy across all generated namespaces, you can provide overrides in the HardeningOptionsFile
+	// If you need to configure the default ServiceAccount and NetworkPolicy on a per-namespace basis, it is recommended that you disable this
+	DisableHardening bool `usage:"Path to file that contains the configuration for the default ServiceAccount and NetworkPolicy deployed on operated namespaces" env:"HARDENING_OPTIONS_FILE"`
+
+	// HardeningOptionsFile is the path to the file that contains the configuration for the default ServiceAccount and NetworkPolicy deployed on operated namespaces
+	// By default, the default service account of the namespace is patched to disable automountServiceAccountToken
+	// By default, a default NetworkPolicy is deployed in the namespace that selects all pods in the namespace and limits all ingress and egress
+	HardeningOptionsFile string `usage:"Path to file that contains the configuration for the default ServiceAccount and NetworkPolicy deployed on operated namespaces" default:"hardening.yaml" env:"HARDENING_OPTIONS_FILE"`
 }
 
 func (opts RuntimeOptions) Validate() error {
@@ -73,6 +89,12 @@ func (opts RuntimeOptions) Validate() error {
 
 	if len(opts.NodeName) > 0 {
 		logrus.Infof("Marking events as being sourced from node %s", opts.NodeName)
+	}
+
+	if opts.DisableHardening {
+		logrus.Info("Hardening is disabled")
+	} else {
+		logrus.Info("Managing the configuration of the default ServiceAccount and an auto-generated NetworkPolicy in all namespaces managed by this Project Operator")
 	}
 
 	return nil
