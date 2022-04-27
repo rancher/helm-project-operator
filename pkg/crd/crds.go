@@ -21,17 +21,26 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func WriteFiles(dirpath string) error {
+func WriteFiles(crdDirpath, crdDepDirpath string) error {
+	objs, depObjs, err := Objects(false)
+	if err != nil {
+		return err
+	}
+	if err := writeFiles(crdDirpath, objs); err != nil {
+		return err
+	}
+	if err := writeFiles(crdDepDirpath, depObjs); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeFiles(dirpath string, objs []runtime.Object) error {
 	if err := os.MkdirAll(dirpath, 0755); err != nil {
 		return err
 	}
 
 	objMap := make(map[string][]byte)
-
-	objs, err := Objects(false)
-	if err != nil {
-		return err
-	}
 
 	for _, o := range objs {
 		data, err := yaml.Export(o)
@@ -67,25 +76,32 @@ func WriteFiles(dirpath string) error {
 	return nil
 }
 
-func Print(out io.Writer) error {
-	obj, err := Objects(false)
+func Print(out io.Writer, depOut io.Writer) {
+	objs, depObjs, err := Objects(false)
 	if err != nil {
-		return err
+		logrus.Fatalf("%s", err)
 	}
-	data, err := yaml.Export(obj...)
+	objsV1Beta1, depObjsV1Beta1, err := Objects(true)
 	if err != nil {
-		return err
+		logrus.Fatalf("%s", err)
 	}
+	if err := print(out, objs, objsV1Beta1); err != nil {
+		logrus.Fatalf("%s", err)
+	}
+	if err := print(depOut, depObjs, depObjsV1Beta1); err != nil {
+		logrus.Fatalf("%s", err)
+	}
+}
 
-	objV1Beta1, err := Objects(true)
+func print(out io.Writer, objs []runtime.Object, objsV1Beta1 []runtime.Object) error {
+	data, err := yaml.Export(objs...)
 	if err != nil {
 		return err
 	}
-	dataV1Beta1, err := yaml.Export(objV1Beta1...)
+	dataV1Beta1, err := yaml.Export(objsV1Beta1...)
 	if err != nil {
 		return err
 	}
-
 	data = append([]byte("{{- if .Capabilities.APIVersions.Has \"apiextensions.k8s.io/v1\" -}}\n"), data...)
 	data = append(data, []byte("{{- else -}}\n---\n")...)
 	data = append(data, dataV1Beta1...)
@@ -94,26 +110,39 @@ func Print(out io.Writer) error {
 	return err
 }
 
-func Objects(v1beta1 bool) (result []runtime.Object, err error) {
-	for _, crdDef := range List() {
+func Objects(v1beta1 bool) (crds, crdDeps []runtime.Object, err error) {
+	crdDefs, crdDepDefs := List()
+	crds, err = objects(v1beta1, crdDefs)
+	if err != nil {
+		return nil, nil, err
+	}
+	crdDeps, err = objects(v1beta1, crdDepDefs)
+	if err != nil {
+		return nil, nil, err
+	}
+	return
+}
+
+func objects(v1beta1 bool, crdDefs []crd.CRD) (crds []runtime.Object, err error) {
+	for _, crdDef := range crdDefs {
 		if v1beta1 {
 			crd, err := crdDef.ToCustomResourceDefinitionV1Beta1()
 			if err != nil {
 				return nil, err
 			}
-			result = append(result, crd)
+			crds = append(crds, crd)
 		} else {
 			crd, err := crdDef.ToCustomResourceDefinition()
 			if err != nil {
 				return nil, err
 			}
-			result = append(result, crd)
+			crds = append(crds, crd)
 		}
 	}
 	return
 }
 
-func List() []crd.CRD {
+func List() ([]crd.CRD, []crd.CRD) {
 	crds := []crd.CRD{
 		newCRD(&v1alpha1.ProjectHelmChart{}, func(c crd.CRD) crd.CRD {
 			return c.
@@ -124,9 +153,8 @@ func List() []crd.CRD {
 				WithColumn("Target Namespaces", ".status.targetNamespaces")
 		}),
 	}
-	crds = append(crds, helmcontrollercrd.List()...)
-	crds = append(crds, helmlockercrd.List()...)
-	return crds
+	crdDeps := append(helmcontrollercrd.List(), helmlockercrd.List()...)
+	return crds, crdDeps
 }
 
 func Create(ctx context.Context, cfg *rest.Config) error {
@@ -135,7 +163,8 @@ func Create(ctx context.Context, cfg *rest.Config) error {
 		return err
 	}
 
-	return factory.BatchCreateCRDs(ctx, List()...).BatchWait()
+	crds, crdDeps := List()
+	return factory.BatchCreateCRDs(ctx, append(crds, crdDeps...)...).BatchWait()
 }
 
 func newCRD(obj interface{}, customize func(crd.CRD) crd.CRD) crd.CRD {

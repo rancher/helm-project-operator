@@ -1,20 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/crd"
+	"github.com/sirupsen/logrus"
 
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
 )
 
 func main() {
-	if len(os.Args) > 2 && os.Args[1] == "crds" {
-		fmt.Println("Writing CRDs to", os.Args[2])
-		if err := crd.WriteFiles(os.Args[2]); err != nil {
+	if len(os.Args) > 3 && os.Args[1] == "crds" {
+		if len(os.Args) != 4 {
+			logrus.Fatal("usage: ./codegen crds <crd-directory> <crd-dependency-directory>")
+		}
+		logrus.Infof("Writing CRDs to %s and %s", os.Args[2], os.Args[3])
+		if err := crd.WriteFiles(os.Args[2], os.Args[3]); err != nil {
 			panic(err)
 		}
 		return
