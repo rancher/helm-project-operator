@@ -3,7 +3,6 @@ package hardened
 import (
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,7 +23,7 @@ var (
 	}
 )
 
-func (h *handler) getDefaultServiceAccount(namespace *v1.Namespace) *corev1.ServiceAccount {
+func (h *handler) getDefaultServiceAccount(namespace *corev1.Namespace) *corev1.ServiceAccount {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultServiceAccountName,
@@ -49,7 +48,7 @@ func (h *handler) getDefaultServiceAccount(namespace *v1.Namespace) *corev1.Serv
 	return serviceAccount
 }
 
-func (h *handler) getNetworkPolicy(namespace *v1.Namespace) *networkingv1.NetworkPolicy {
+func (h *handler) getNetworkPolicy(namespace *corev1.Namespace) *networkingv1.NetworkPolicy {
 	networkPolicy := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultNetworkPolicyName,

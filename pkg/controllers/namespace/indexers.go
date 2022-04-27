@@ -2,7 +2,7 @@ package namespace
 
 import (
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -13,7 +13,7 @@ func (h *handler) initIndexers() {
 	h.namespaceCache.AddIndexer(NamespacesByProjectExcludingRegistrationID, h.namespaceToProjectIDExcludingRegistration)
 }
 
-func (h *handler) namespaceToProjectIDExcludingRegistration(namespace *v1.Namespace) ([]string, error) {
+func (h *handler) namespaceToProjectIDExcludingRegistration(namespace *corev1.Namespace) ([]string, error) {
 	if h.isSystemNamespace(namespace) {
 		return nil, nil
 	}

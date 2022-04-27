@@ -5,9 +5,9 @@ import (
 
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/wrangler/pkg/apply"
-	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	networkingcontrollers "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io/v1"
-	v1 "k8s.io/api/core/v1"
+	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	networkingcontroller "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type handler struct {
@@ -15,20 +15,20 @@ type handler struct {
 
 	opts common.HardeningOptions
 
-	namespaces      corecontrollers.NamespaceController
-	namespaceCache  corecontrollers.NamespaceCache
-	serviceaccounts corecontrollers.ServiceAccountController
-	networkpolicies networkingcontrollers.NetworkPolicyController
+	namespaces      corecontroller.NamespaceController
+	namespaceCache  corecontroller.NamespaceCache
+	serviceaccounts corecontroller.ServiceAccountController
+	networkpolicies networkingcontroller.NetworkPolicyController
 }
 
 func Register(
 	ctx context.Context,
 	apply apply.Apply,
 	opts common.HardeningOptions,
-	namespaces corecontrollers.NamespaceController,
-	namespaceCache corecontrollers.NamespaceCache,
-	serviceaccounts corecontrollers.ServiceAccountController,
-	networkpolicies networkingcontrollers.NetworkPolicyController,
+	namespaces corecontroller.NamespaceController,
+	namespaceCache corecontroller.NamespaceCache,
+	serviceaccounts corecontroller.ServiceAccountController,
+	networkpolicies networkingcontroller.NetworkPolicyController,
 ) {
 
 	apply = apply.
@@ -50,7 +50,7 @@ func Register(
 
 // Single Namespace Handler
 
-func (h *handler) OnChange(name string, namespace *v1.Namespace) (*v1.Namespace, error) {
+func (h *handler) OnChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	if !common.HasHelmProjectOperatedLabel(namespace.Labels) {
 		// only harden operated namespaces
 		return namespace, nil

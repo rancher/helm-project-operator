@@ -3,23 +3,23 @@ package project
 import (
 	"fmt"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
-	rbac "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 // Note: each resource created here should have a resolver set in resolvers.go
 
-func (h *handler) getSubjectRoleToSubjectsFromBindings(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbac.Subject, error) {
+func (h *handler) getSubjectRoleToSubjectsFromBindings(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbacv1.Subject, error) {
 	defaultClusterRoles := common.GetDefaultClusterRoles(h.opts)
-	subjectRoleToSubjects := make(map[string][]rbac.Subject)
-	subjectRoleToSubjectMap := make(map[string]map[string]rbac.Subject)
+	subjectRoleToSubjects := make(map[string][]rbacv1.Subject)
+	subjectRoleToSubjectMap := make(map[string]map[string]rbacv1.Subject)
 	if len(defaultClusterRoles) == 0 {
 		// no roles to get get subjects for
 		return subjectRoleToSubjects, nil
 	}
 	for subjectRole := range defaultClusterRoles {
-		subjectRoleToSubjectMap[subjectRole] = make(map[string]rbac.Subject)
+		subjectRoleToSubjectMap[subjectRole] = make(map[string]rbacv1.Subject)
 	}
 	roleBindings, err := h.rolebindingCache.GetByIndex(
 		RoleBindingInRegistrationNamespaceByRoleRef,
@@ -66,7 +66,7 @@ func (h *handler) getSubjectRoleToSubjectsFromBindings(projectHelmChart *v1alpha
 	}
 	// convert back into list so that no duplicates are created
 	for subjectRole := range defaultClusterRoles {
-		subjects := []rbac.Subject{}
+		subjects := []rbacv1.Subject{}
 		for _, subject := range subjectRoleToSubjectMap[subjectRole] {
 			subjects = append(subjects, subject)
 		}

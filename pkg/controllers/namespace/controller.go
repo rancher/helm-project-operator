@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
-	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	helmprojectcontroller "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/pkg/apply"
-	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
@@ -28,11 +28,11 @@ type handler struct {
 	systemNamespaceRegister              NamespaceRegister
 	projectRegistrationNamespaceRegister NamespaceRegister
 
-	namespaces            corecontrollers.NamespaceController
-	namespaceCache        corecontrollers.NamespaceCache
-	configmaps            corecontrollers.ConfigMapController
-	projectHelmCharts     helmproject.ProjectHelmChartController
-	projectHelmChartCache helmproject.ProjectHelmChartCache
+	namespaces            corecontroller.NamespaceController
+	namespaceCache        corecontroller.NamespaceCache
+	configmaps            corecontroller.ConfigMapController
+	projectHelmCharts     helmprojectcontroller.ProjectHelmChartController
+	projectHelmChartCache helmprojectcontroller.ProjectHelmChartCache
 }
 
 func Register(
@@ -40,11 +40,11 @@ func Register(
 	apply apply.Apply,
 	systemNamespace, valuesYaml, questionsYaml string,
 	opts common.Options,
-	namespaces corecontrollers.NamespaceController,
-	namespaceCache corecontrollers.NamespaceCache,
-	configmaps corecontrollers.ConfigMapController,
-	projectHelmCharts helmproject.ProjectHelmChartController,
-	projectHelmChartCache helmproject.ProjectHelmChartCache,
+	namespaces corecontroller.NamespaceController,
+	namespaceCache corecontroller.NamespaceCache,
+	configmaps corecontroller.ConfigMapController,
+	projectHelmCharts helmprojectcontroller.ProjectHelmChartController,
+	projectHelmChartCache helmprojectcontroller.ProjectHelmChartCache,
 	dynamic dynamic.Interface,
 ) ProjectGetter {
 
@@ -99,7 +99,7 @@ func Register(
 
 // Single Namespace Handler
 
-func (h *handler) OnSingleNamespaceChange(name string, namespace *v1.Namespace) (*v1.Namespace, error) {
+func (h *handler) OnSingleNamespaceChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	if namespace.Name != h.systemNamespace {
 		// enqueue system namespace to ensure that rolebindings are updated
 		h.namespaces.Enqueue(h.systemNamespace)
@@ -113,7 +113,7 @@ func (h *handler) OnSingleNamespaceChange(name string, namespace *v1.Namespace) 
 
 // Multiple Namespaces Handler
 
-func (h *handler) OnMultiNamespaceChange(name string, namespace *v1.Namespace) (*v1.Namespace, error) {
+func (h *handler) OnMultiNamespaceChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	if namespace == nil {
 		return namespace, nil
 	}
@@ -145,7 +145,7 @@ func (h *handler) OnMultiNamespaceChange(name string, namespace *v1.Namespace) (
 	}
 }
 
-func (h *handler) enqueueProjectNamespaces(projectRegistrationNamespace *v1.Namespace) error {
+func (h *handler) enqueueProjectNamespaces(projectRegistrationNamespace *corev1.Namespace) error {
 	if projectRegistrationNamespace == nil {
 		return nil
 	}
@@ -170,7 +170,7 @@ func (h *handler) enqueueProjectNamespaces(projectRegistrationNamespace *v1.Name
 	return nil
 }
 
-func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Namespace) error {
+func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *corev1.Namespace) error {
 	// get the project ID and generate the namespace object to be applied
 	projectID, inProject := h.getProjectIDFromNamespaceLabels(namespace)
 
@@ -247,7 +247,7 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *v1.Na
 	return nil
 }
 
-func (h *handler) updateNamespaceWithHelmOperatorProjectLabel(namespace *v1.Namespace, projectID string, inProject bool) error {
+func (h *handler) updateNamespaceWithHelmOperatorProjectLabel(namespace *corev1.Namespace, projectID string, inProject bool) error {
 	if namespace.DeletionTimestamp != nil {
 		// no need to update a namespace about to be deleted
 		return nil
@@ -287,14 +287,14 @@ func (h *handler) updateNamespaceWithHelmOperatorProjectLabel(namespace *v1.Name
 	return nil
 }
 
-func (h *handler) isProjectRegistrationNamespace(namespace *v1.Namespace) bool {
+func (h *handler) isProjectRegistrationNamespace(namespace *corev1.Namespace) bool {
 	if namespace == nil {
 		return false
 	}
 	return h.projectRegistrationNamespaceRegister.Has(namespace.Name)
 }
 
-func (h *handler) isSystemNamespace(namespace *v1.Namespace) bool {
+func (h *handler) isSystemNamespace(namespace *corev1.Namespace) bool {
 	if namespace == nil {
 		return false
 	}

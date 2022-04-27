@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/rancher/wrangler/pkg/apply"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func (h *handler) configureApplyForNamespace(namespace *v1.Namespace) apply.Apply {
+func (h *handler) configureApplyForNamespace(namespace *corev1.Namespace) apply.Apply {
 	return h.apply.
 		WithOwner(namespace).
 		// Why do we need the release name?
@@ -17,7 +17,7 @@ func (h *handler) configureApplyForNamespace(namespace *v1.Namespace) apply.Appl
 		WithSetID(fmt.Sprintf("%s-%s-data", namespace.Name, h.opts.ReleaseName))
 }
 
-func (h *handler) getProjectIDFromNamespaceLabels(namespace *v1.Namespace) (string, bool) {
+func (h *handler) getProjectIDFromNamespaceLabels(namespace *corev1.Namespace) (string, bool) {
 	labels := namespace.GetLabels()
 	if labels == nil {
 		return "", false
@@ -26,7 +26,7 @@ func (h *handler) getProjectIDFromNamespaceLabels(namespace *v1.Namespace) (stri
 	return projectID, namespaceInProject
 }
 
-func (h *handler) enqueueProjectHelmChartsForNamespace(namespace *v1.Namespace) error {
+func (h *handler) enqueueProjectHelmChartsForNamespace(namespace *corev1.Namespace) error {
 	projectHelmCharts, err := h.projectHelmChartCache.List(namespace.Name, labels.Everything())
 	if err != nil {
 		return err

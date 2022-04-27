@@ -5,15 +5,15 @@ import (
 	"strings"
 
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Note: each resource created here should have a resolver set in resolvers.go
 // The only exception is namespaces since those are handled by the main controller OnChange
 
-func (h *handler) getProjectRegistrationNamespace(projectID string, isOrphaned bool, namespace *v1.Namespace) *v1.Namespace {
-	return &v1.Namespace{
+func (h *handler) getProjectRegistrationNamespace(projectID string, isOrphaned bool, namespace *corev1.Namespace) *corev1.Namespace {
+	return &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        fmt.Sprintf(common.ProjectRegistrationNamespaceFmt, projectID),
 			Annotations: common.GetProjectNamespaceAnnotations(projectID, h.opts.ProjectLabel, h.opts.ClusterID),
@@ -22,8 +22,8 @@ func (h *handler) getProjectRegistrationNamespace(projectID string, isOrphaned b
 	}
 }
 
-func (h *handler) getConfigMap(projectID string, namespace *v1.Namespace) *v1.ConfigMap {
-	return &v1.ConfigMap{
+func (h *handler) getConfigMap(projectID string, namespace *corev1.Namespace) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      h.getConfigMapName(),
 			Namespace: namespace.Name,

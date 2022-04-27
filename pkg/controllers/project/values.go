@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/pkg/data"
 )
 

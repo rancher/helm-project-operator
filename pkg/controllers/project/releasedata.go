@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
-	rbac "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -49,10 +49,10 @@ func (h *handler) getDashboardValuesFromConfigmaps(projectHelmChart *v1alpha1.Pr
 	return values, nil
 }
 
-func (h *handler) getSubjectRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbac.RoleRef, error) {
-	subjectRoleToRoleRefs := make(map[string][]rbac.RoleRef)
+func (h *handler) getSubjectRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbacv1.RoleRef, error) {
+	subjectRoleToRoleRefs := make(map[string][]rbacv1.RoleRef)
 	for subjectRole := range common.GetDefaultClusterRoles(h.opts) {
-		subjectRoleToRoleRefs[subjectRole] = []rbac.RoleRef{}
+		subjectRoleToRoleRefs[subjectRole] = []rbacv1.RoleRef{}
 	}
 	if len(subjectRoleToRoleRefs) == 0 {
 		// no roles were defined to be auto-aggregated
@@ -84,8 +84,8 @@ func (h *handler) getSubjectRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.P
 			// label value is invalid since it does not point to default subject role name
 			continue
 		}
-		subjectRoleToRoleRefs[subjectRole] = append(roleRefs, rbac.RoleRef{
-			APIGroup: rbac.GroupName,
+		subjectRoleToRoleRefs[subjectRole] = append(roleRefs, rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
 			Kind:     "Role",
 			Name:     role.Name,
 		})

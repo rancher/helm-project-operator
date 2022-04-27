@@ -8,29 +8,29 @@ import (
 
 	"github.com/aiyengar2/helm-locker/pkg/controllers/release"
 	helmlocker "github.com/aiyengar2/helm-locker/pkg/generated/controllers/helm.cattle.io"
-	helmlockercontrollers "github.com/aiyengar2/helm-locker/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	helmlockercontroller "github.com/aiyengar2/helm-locker/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-locker/pkg/objectset"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/hardened"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/namespace"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/project"
 	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io"
-	"github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	helmprojectcontroller "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
-	helm "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io"
-	helmcontrollers "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io/v1"
+	k3shelm "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io"
+	k3shelmcontroller "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io/v1"
 	"github.com/rancher/lasso/pkg/cache"
 	"github.com/rancher/lasso/pkg/client"
 	"github.com/rancher/lasso/pkg/controller"
 	"github.com/rancher/wrangler/pkg/apply"
 	batch "github.com/rancher/wrangler/pkg/generated/controllers/batch"
-	batchcontrollers "github.com/rancher/wrangler/pkg/generated/controllers/batch/v1"
+	batchcontroller "github.com/rancher/wrangler/pkg/generated/controllers/batch/v1"
 	"github.com/rancher/wrangler/pkg/generated/controllers/core"
-	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io"
-	networkingcontrollers "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io/v1"
+	networkingcontroller "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io/v1"
 	rbac "github.com/rancher/wrangler/pkg/generated/controllers/rbac"
-	rbaccontrollers "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
+	rbaccontroller "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/leader"
 	"github.com/rancher/wrangler/pkg/ratelimit"
@@ -49,20 +49,20 @@ import (
 )
 
 type appContext struct {
-	v1alpha1.Interface
+	helmprojectcontroller.Interface
 
 	Dynamic    dynamic.Interface
 	K8s        kubernetes.Interface
-	Core       corecontrollers.Interface
-	Networking networkingcontrollers.Interface
+	Core       corecontroller.Interface
+	Networking networkingcontroller.Interface
 
-	HelmLocker        helmlockercontrollers.Interface
+	HelmLocker        helmlockercontroller.Interface
 	ObjectSetRegister objectset.LockableObjectSetRegister
 	ObjectSetHandler  *controller.SharedHandler
 
-	HelmController helmcontrollers.Interface
-	Batch          batchcontrollers.Interface
-	RBAC           rbaccontrollers.Interface
+	HelmController k3shelmcontroller.Interface
+	Batch          batchcontroller.Interface
+	RBAC           rbaccontroller.Interface
 
 	Apply            apply.Apply
 	EventBroadcaster record.EventBroadcaster
@@ -288,7 +288,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 
 	// Helm Controllers - should be scoped to the system namespace only
 
-	helm, err := helm.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
+	helm, err := k3shelm.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
 		SharedControllerFactory: scf,
 		Namespace:               systemNamespace,
 	})

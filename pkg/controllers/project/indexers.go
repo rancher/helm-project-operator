@@ -3,10 +3,10 @@ package project
 import (
 	"fmt"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	corev1 "k8s.io/api/core/v1"
-	rbac "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 const (
@@ -44,7 +44,7 @@ func (h *handler) projectHelmChartToReleaseName(projectHelmChart *v1alpha1.Proje
 	return []string{releaseName}, nil
 }
 
-func (h *handler) roleBindingInRegistrationNamespaceToRoleRef(rb *rbac.RoleBinding) ([]string, error) {
+func (h *handler) roleBindingInRegistrationNamespaceToRoleRef(rb *rbacv1.RoleBinding) ([]string, error) {
 	isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(rb.Namespace)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (h *handler) roleBindingInRegistrationNamespaceToRoleRef(rb *rbac.RoleBindi
 	return []string{NamespacedBindingReferencesDefaultOperatorRole(rb.Namespace)}, nil
 }
 
-func (h *handler) clusterRoleBindingToRoleRef(crb *rbac.ClusterRoleBinding) ([]string, error) {
+func (h *handler) clusterRoleBindingToRoleRef(crb *rbacv1.ClusterRoleBinding) ([]string, error) {
 	_, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, crb.RoleRef.Name)
 	if !isDefaultRoleRef {
 		// we only care about rolebindings in the registration namespace that are tied to the default roles
@@ -73,7 +73,7 @@ func (h *handler) clusterRoleBindingToRoleRef(crb *rbac.ClusterRoleBinding) ([]s
 	return []string{BindingReferencesDefaultOperatorRole}, nil
 }
 
-func (h *handler) roleInReleaseNamespaceToReleaseName(role *rbac.Role) ([]string, error) {
+func (h *handler) roleInReleaseNamespaceToReleaseName(role *rbacv1.Role) ([]string, error) {
 	return h.getReleaseIndexFromNamespaceAndLabels(role.Namespace, role.Labels, common.HelmProjectOperatorProjectHelmChartRoleLabel)
 }
 

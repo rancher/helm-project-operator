@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (h *handler) initSystemNamespaces(systemNamespaceList []string, systemNamespaceRegister NamespaceRegister) {
 	for _, namespace := range systemNamespaceList {
-		systemNamespaceRegister.Set(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
+		systemNamespaceRegister.Set(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
 	}
 }
 

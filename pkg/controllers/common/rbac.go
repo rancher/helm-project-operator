@@ -1,7 +1,7 @@
 package common
 
 import (
-	rbac "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 func GetDefaultClusterRoles(opts Options) map[string]string {
@@ -27,18 +27,18 @@ func IsDefaultClusterRoleRef(opts Options, roleRefName string) (string, bool) {
 	return "", false
 }
 
-func FilterToUsersAndGroups(subjects []rbac.Subject) []rbac.Subject {
-	var filtered []rbac.Subject
+func FilterToUsersAndGroups(subjects []rbacv1.Subject) []rbacv1.Subject {
+	var filtered []rbacv1.Subject
 	for _, subject := range subjects {
-		if subject.APIGroup != rbac.GroupName {
+		if subject.APIGroup != rbacv1.GroupName {
 			continue
 		}
-		if subject.Kind != rbac.UserKind && subject.Kind != rbac.GroupKind {
+		if subject.Kind != rbacv1.UserKind && subject.Kind != rbacv1.GroupKind {
 			// we do not automatically bind service accounts, only users and groups
 			continue
 		}
 		// note: we are purposefully omitting namespace here since it is not necessary even if set
-		filtered = append(filtered, rbac.Subject{
+		filtered = append(filtered, rbacv1.Subject{
 			APIGroup: subject.APIGroup,
 			Kind:     subject.Kind,
 			Name:     subject.Name,

@@ -1,6 +1,6 @@
 package common
 
-import "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+import v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 
 // User-Applied Labels
 // Note: These labels are expected to be applied by users (or by Jobs, in the case of cleanup), to mark a resources as one that needs

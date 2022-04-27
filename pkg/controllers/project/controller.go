@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	helmlocker "github.com/aiyengar2/helm-locker/pkg/generated/controllers/helm.cattle.io/v1alpha1"
-	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	helmlockercontroller "github.com/aiyengar2/helm-locker/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/namespace"
-	helmproject "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	helmprojectcontroller "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
-	helm "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io/v1"
+	k3shelmcontroller "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
-	corecontrollers "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	rbacv1 "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
+	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	rbaccontroller "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,20 +27,20 @@ type handler struct {
 	systemNamespace         string
 	opts                    common.Options
 	apply                   apply.Apply
-	projectHelmCharts       helmproject.ProjectHelmChartController
-	projectHelmChartCache   helmproject.ProjectHelmChartCache
-	configmaps              corecontrollers.ConfigMapController
-	configmapCache          corecontrollers.ConfigMapCache
-	roles                   rbacv1.RoleController
-	roleCache               rbacv1.RoleCache
-	clusterrolebindings     rbacv1.ClusterRoleBindingController
-	clusterrolebindingCache rbacv1.ClusterRoleBindingCache
-	helmCharts              helm.HelmChartController
-	helmReleases            helmlocker.HelmReleaseController
-	namespaces              corecontrollers.NamespaceController
-	namespaceCache          corecontrollers.NamespaceCache
-	rolebindings            rbacv1.RoleBindingController
-	rolebindingCache        rbacv1.RoleBindingCache
+	projectHelmCharts       helmprojectcontroller.ProjectHelmChartController
+	projectHelmChartCache   helmprojectcontroller.ProjectHelmChartCache
+	configmaps              corecontroller.ConfigMapController
+	configmapCache          corecontroller.ConfigMapCache
+	roles                   rbaccontroller.RoleController
+	roleCache               rbaccontroller.RoleCache
+	clusterrolebindings     rbaccontroller.ClusterRoleBindingController
+	clusterrolebindingCache rbaccontroller.ClusterRoleBindingCache
+	helmCharts              k3shelmcontroller.HelmChartController
+	helmReleases            helmlockercontroller.HelmReleaseController
+	namespaces              corecontroller.NamespaceController
+	namespaceCache          corecontroller.NamespaceCache
+	rolebindings            rbaccontroller.RoleBindingController
+	rolebindingCache        rbaccontroller.RoleBindingCache
 	projectGetter           namespace.ProjectGetter
 }
 
@@ -49,20 +49,20 @@ func Register(
 	systemNamespace string,
 	opts common.Options,
 	apply apply.Apply,
-	projectHelmCharts helmproject.ProjectHelmChartController,
-	projectHelmChartCache helmproject.ProjectHelmChartCache,
-	configmaps corecontrollers.ConfigMapController,
-	configmapCache corecontrollers.ConfigMapCache,
-	roles rbacv1.RoleController,
-	roleCache rbacv1.RoleCache,
-	clusterrolebindings rbacv1.ClusterRoleBindingController,
-	clusterrolebindingCache rbacv1.ClusterRoleBindingCache,
-	helmCharts helm.HelmChartController,
-	helmReleases helmlocker.HelmReleaseController,
-	namespaces corecontrollers.NamespaceController,
-	namespaceCache corecontrollers.NamespaceCache,
-	rolebindings rbacv1.RoleBindingController,
-	rolebindingCache rbacv1.RoleBindingCache,
+	projectHelmCharts helmprojectcontroller.ProjectHelmChartController,
+	projectHelmChartCache helmprojectcontroller.ProjectHelmChartCache,
+	configmaps corecontroller.ConfigMapController,
+	configmapCache corecontroller.ConfigMapCache,
+	roles rbaccontroller.RoleController,
+	roleCache rbaccontroller.RoleCache,
+	clusterrolebindings rbaccontroller.ClusterRoleBindingController,
+	clusterrolebindingCache rbaccontroller.ClusterRoleBindingCache,
+	helmCharts k3shelmcontroller.HelmChartController,
+	helmReleases helmlockercontroller.HelmReleaseController,
+	namespaces corecontroller.NamespaceController,
+	namespaceCache corecontroller.NamespaceCache,
+	rolebindings rbaccontroller.RoleBindingController,
+	rolebindingCache rbaccontroller.RoleBindingCache,
 	projectGetter namespace.ProjectGetter,
 ) {
 
@@ -100,7 +100,7 @@ func Register(
 
 	h.initResolvers(ctx)
 
-	helmproject.RegisterProjectHelmChartGeneratingHandler(ctx,
+	helmprojectcontroller.RegisterProjectHelmChartGeneratingHandler(ctx,
 		projectHelmCharts,
 		apply,
 		"",

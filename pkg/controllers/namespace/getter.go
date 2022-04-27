@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
-	corev1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	v1 "k8s.io/api/core/v1"
+	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -23,7 +23,7 @@ type ProjectGetter interface {
 	GetTargetProjectNamespaces(projectHelmChart *v1alpha1.ProjectHelmChart) ([]string, error)
 }
 
-type NamespaceChecker func(namespace *v1.Namespace) bool
+type NamespaceChecker func(namespace *corev1.Namespace) bool
 
 // NewLabelBasedProjectGetter returns a ProjectGetter that gets target project namespaces that meet the following criteria:
 // 1) Must have the same projectLabel value as the namespace where the ProjectHelmChart lives in
@@ -33,7 +33,7 @@ func NewLabelBasedProjectGetter(
 	projectLabel string,
 	isProjectRegistrationNamespace NamespaceChecker,
 	isSystemNamespace NamespaceChecker,
-	namespaces corev1.NamespaceController,
+	namespaces corecontroller.NamespaceController,
 ) ProjectGetter {
 	return &projectGetter{
 		namespaces: namespaces,
@@ -41,7 +41,7 @@ func NewLabelBasedProjectGetter(
 		isProjectRegistrationNamespace: isProjectRegistrationNamespace,
 		isSystemNamespace:              isSystemNamespace,
 
-		getProjectNamespaces: func(projectHelmChart *v1alpha1.ProjectHelmChart) (*v1.NamespaceList, error) {
+		getProjectNamespaces: func(projectHelmChart *v1alpha1.ProjectHelmChart) (*corev1.NamespaceList, error) {
 			// source of truth is the projectLabel pair that exists on the namespace that the ProjectHelmChart lives within
 			namespace, err := namespaces.Get(projectHelmChart.Namespace, metav1.GetOptions{})
 			if err != nil {
@@ -65,7 +65,7 @@ func NewLabelBasedProjectGetter(
 func NewSingleNamespaceProjectGetter(
 	registrationNamespace string,
 	systemNamespaces []string,
-	namespaces corev1.NamespaceController,
+	namespaces corecontroller.NamespaceController,
 ) ProjectGetter {
 	isSystemNamespace := make(map[string]bool)
 	for _, ns := range systemNamespaces {
@@ -74,16 +74,16 @@ func NewSingleNamespaceProjectGetter(
 	return &projectGetter{
 		namespaces: namespaces,
 
-		isProjectRegistrationNamespace: func(namespace *v1.Namespace) bool {
+		isProjectRegistrationNamespace: func(namespace *corev1.Namespace) bool {
 			// only one registrationNamespace exists
 			return namespace.Name == registrationNamespace
 		},
-		isSystemNamespace: func(namespace *v1.Namespace) bool {
+		isSystemNamespace: func(namespace *corev1.Namespace) bool {
 			// only track explicit systemNamespaces
 			return isSystemNamespace[namespace.Name]
 		},
 
-		getProjectNamespaces: func(projectHelmChart *v1alpha1.ProjectHelmChart) (*v1.NamespaceList, error) {
+		getProjectNamespaces: func(projectHelmChart *v1alpha1.ProjectHelmChart) (*corev1.NamespaceList, error) {
 			// source of truth is the ProjectHelmChart spec.projectNamespaceSelector
 			selector, err := metav1.LabelSelectorAsSelector(projectHelmChart.Spec.ProjectNamespaceSelector)
 			if err != nil {
@@ -98,7 +98,7 @@ func NewSingleNamespaceProjectGetter(
 			if namespaceList == nil {
 				return nil, nil
 			}
-			var namespaces []v1.Namespace
+			var namespaces []corev1.Namespace
 			for _, ns := range namespaceList.Items {
 				if !selector.Matches(labels.Set(ns.Labels)) {
 					continue
@@ -112,12 +112,12 @@ func NewSingleNamespaceProjectGetter(
 }
 
 type projectGetter struct {
-	namespaces corev1.NamespaceController
+	namespaces corecontroller.NamespaceController
 
 	isProjectRegistrationNamespace NamespaceChecker
 	isSystemNamespace              NamespaceChecker
 
-	getProjectNamespaces func(projectHelmChart *v1alpha1.ProjectHelmChart) (*v1.NamespaceList, error)
+	getProjectNamespaces func(projectHelmChart *v1alpha1.ProjectHelmChart) (*corev1.NamespaceList, error)
 }
 
 func (g *projectGetter) IsProjectRegistrationNamespace(namespace string) (bool, error) {

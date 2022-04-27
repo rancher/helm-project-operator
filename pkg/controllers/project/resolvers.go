@@ -3,9 +3,9 @@ package project
 import (
 	"context"
 
-	"github.com/aiyengar2/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
+	helmlockerv1alpha1 "github.com/aiyengar2/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
-	v1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
+	helmcontrollerv1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/relatedresource"
 	corev1 "k8s.io/api/core/v1"
@@ -69,10 +69,10 @@ func (h *handler) resolveSystemNamespaceData(namespace, name string, obj runtime
 	}
 	// since the HelmChart and HelmRelease will be created and owned by the ProjectHelmChart,
 	// we can simply leverage is annotations to identify what we should resolve to.
-	if helmChart, ok := obj.(*v1.HelmChart); ok {
+	if helmChart, ok := obj.(*helmcontrollerv1.HelmChart); ok {
 		return h.resolveProjectHelmChartOwned(helmChart.Annotations)
 	}
-	if helmRelease, ok := obj.(*v1alpha1.HelmRelease); ok {
+	if helmRelease, ok := obj.(*helmlockerv1alpha1.HelmRelease); ok {
 		return h.resolveProjectHelmChartOwned(helmRelease.Annotations)
 	}
 	return nil, nil
