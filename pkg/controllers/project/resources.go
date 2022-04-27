@@ -14,6 +14,7 @@ import (
 // Note: each resource created here should have a resolver set in resolvers.go
 // The only exception is ProjectHelmCharts since those are handled by the main generating controller
 
+// getHelmChart returns the HelmChart created on behalf of this ProjectHelmChart
 func (h *handler) getHelmChart(projectID string, valuesContent string, projectHelmChart *v1alpha1.ProjectHelmChart) *helmcontrollerv1.HelmChart {
 	// must be in system namespace since helm controllers are configured to only watch one namespace
 	jobImage := DefaultJobImage
@@ -34,6 +35,7 @@ func (h *handler) getHelmChart(projectID string, valuesContent string, projectHe
 	return helmChart
 }
 
+// getHelmRelease returns the HelmRelease created on behalf of this ProjectHelmChart
 func (h *handler) getHelmRelease(projectID string, projectHelmChart *v1alpha1.ProjectHelmChart) *helmlockerv1alpha1.HelmRelease {
 	// must be in system namespace since helmlocker controllers are configured to only watch one namespace
 	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
@@ -49,6 +51,7 @@ func (h *handler) getHelmRelease(projectID string, projectHelmChart *v1alpha1.Pr
 	return helmRelease
 }
 
+// getProjectReleaseNamespace returns the Project Release Namespace created on behalf of this ProjectHelmChart, if required
 func (h *handler) getProjectReleaseNamespace(projectID string, isOrphaned bool, projectHelmChart *v1alpha1.ProjectHelmChart) *v1.Namespace {
 	releaseNamespace, _ := h.getReleaseNamespaceAndName(projectHelmChart)
 	if releaseNamespace == h.systemNamespace || releaseNamespace == projectHelmChart.Namespace {
@@ -64,6 +67,10 @@ func (h *handler) getProjectReleaseNamespace(projectID string, isOrphaned bool, 
 	return projectReleaseNamespace
 }
 
+// getRoleBindings returns the RoleBindings created on behalf of this ProjectHelmChart in the Project Release Namespace based on Roles created in the
+// Project Release Namespace and RoleBindings attached to the default operator roles (configured as AdminClusterRole, EditClusterRole, and ViewClusterRole
+//  in the providedRuntimeOptions) in the Project Registration Namespace only. To update these RoleBindings in the release namespace, you will need to assign
+// additional permissions to the default roles in the Project Registration Namespace or manually assign RoleBindings in the release namespace.
 func (h *handler) getRoleBindings(projectID string, k8sRoleToRoleRefs map[string][]rbacv1.RoleRef, k8sRoleToSubjects map[string][]rbacv1.Subject, projectHelmChart *v1alpha1.ProjectHelmChart) []runtime.Object {
 	var objs []runtime.Object
 	releaseNamespace, _ := h.getReleaseNamespaceAndName(projectHelmChart)

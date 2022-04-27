@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// Init sets up a new Helm Project Operator with the provided options and configuration
 func Init(ctx context.Context, systemNamespace string, cfg clientcmd.ClientConfig, opts common.Options) error {
 	if systemNamespace == "" {
 		return fmt.Errorf("system namespace was not specified, unclear where to place HelmCharts or HelmReleases")

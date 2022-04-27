@@ -7,6 +7,8 @@ import (
 
 // +kubebuilder:pruning:PreserveUnknownFields
 // +kubebuilder:validation:EmbeddedResource
+
+// GenericMap is a wrapper on arbitrary JSON / YAML resources
 type GenericMap map[string]interface{}
 
 func (in *GenericMap) DeepCopy() *GenericMap {

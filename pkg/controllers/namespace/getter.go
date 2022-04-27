@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+// ProjectGetter allows you to get target namespaces based on a project and identify namespaces as special namespaces in a project
 type ProjectGetter interface {
 	// IsProjectRegistrationNamespace returns whether to watch for ProjectHelmCharts in the provided namespace
 	IsProjectRegistrationNamespace(namespace string) (bool, error)
@@ -23,6 +24,7 @@ type ProjectGetter interface {
 	GetTargetProjectNamespaces(projectHelmChart *v1alpha1.ProjectHelmChart) ([]string, error)
 }
 
+// NamespaceChecker is a function that checks a namespace object and returns true or false
 type NamespaceChecker func(namespace *corev1.Namespace) bool
 
 // NewLabelBasedProjectGetter returns a ProjectGetter that gets target project namespaces that meet the following criteria:
@@ -120,6 +122,7 @@ type projectGetter struct {
 	getProjectNamespaces func(projectHelmChart *v1alpha1.ProjectHelmChart) (*corev1.NamespaceList, error)
 }
 
+// IsProjectRegistrationNamespace returns whether to watch for ProjectHelmCharts in the provided namespace
 func (g *projectGetter) IsProjectRegistrationNamespace(namespace string) (bool, error) {
 	namespaceObj, err := g.namespaces.Get(namespace, metav1.GetOptions{})
 	if err != nil {
@@ -128,6 +131,7 @@ func (g *projectGetter) IsProjectRegistrationNamespace(namespace string) (bool, 
 	return g.isProjectRegistrationNamespace(namespaceObj), nil
 }
 
+// IsSystemNamespace returns whether the provided namespace is considered a system namespace
 func (g *projectGetter) IsSystemNamespace(namespace string) (bool, error) {
 	namespaceObj, err := g.namespaces.Get(namespace, metav1.GetOptions{})
 	if err != nil {
@@ -136,6 +140,8 @@ func (g *projectGetter) IsSystemNamespace(namespace string) (bool, error) {
 	return g.isSystemNamespace(namespaceObj), nil
 }
 
+// GetTargetProjectNamespaces returns the list of namespaces that should be targeted for a given ProjectHelmChart
+// Any namespace returned by this should not be a project registration namespace or a system namespace
 func (g *projectGetter) GetTargetProjectNamespaces(projectHelmChart *v1alpha1.ProjectHelmChart) ([]string, error) {
 	projectNamespaceList, err := g.getProjectNamespaces(projectHelmChart)
 	if err != nil {

@@ -12,6 +12,7 @@ type Options struct {
 	OperatorOptions
 }
 
+// Validate validates the provided Options
 func (opts Options) Validate() error {
 	if err := opts.OperatorOptions.Validate(); err != nil {
 		return err
@@ -62,6 +63,7 @@ type OperatorOptions struct {
 	Singleton bool
 }
 
+// Validate validates the provided OperatorOptions
 func (opts OperatorOptions) Validate() error {
 	if len(opts.HelmApiVersion) == 0 {
 		return errors.New("must provide a spec.helmApiVersion that this project operator is being initialized for")

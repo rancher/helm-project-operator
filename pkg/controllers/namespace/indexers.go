@@ -9,6 +9,8 @@ const (
 	NamespacesByProjectExcludingRegistrationID = "helm.cattle.io/namespaces-by-project-id-excluding-registration"
 )
 
+// initIndexers initializes indexers that allow for more efficient computations on related resources without relying on additional
+// calls to be made to the Kubernetes API by referencing the cache instead
 func (h *handler) initIndexers() {
 	h.namespaceCache.AddIndexer(NamespacesByProjectExcludingRegistrationID, h.namespaceToProjectIDExcludingRegistration)
 }

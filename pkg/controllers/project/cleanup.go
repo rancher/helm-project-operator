@@ -8,6 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// initRemoveCleanupLabels removes cleanup labels from all ProjectHelmCharts targeted by this operator
+// This gets applied once on startup
 func (h *handler) initRemoveCleanupLabels() error {
 	namespaceList, err := h.namespaces.List(metav1.ListOptions{})
 	if err != nil {

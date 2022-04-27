@@ -13,6 +13,7 @@ import (
 // Note: each resource created in resources.go should have a resolver handler here
 // The only exception is namespaces since those are handled by the main controller OnChange
 
+// initResolvers initializes resolvers that need to be set to watch child resources of Helm Project Operated Namespaces
 func (h *handler) initResolvers(ctx context.Context) {
 	relatedresource.WatchClusterScoped(
 		ctx, "watch-hardened-hpo-operated-namespace", h.resolveHardenedProjectRegistrationNamespaceData, h.namespaces,

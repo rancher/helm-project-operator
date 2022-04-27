@@ -7,6 +7,7 @@ import (
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 )
 
+// getCleanupStatus returns the status on seeing the cleanup label on a ProjectHelmChart
 func (h *handler) getCleanupStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
 	return v1alpha1.ProjectHelmChartStatus{
 		Status: "AwaitingOperatorRedeployment",
@@ -19,6 +20,7 @@ func (h *handler) getCleanupStatus(projectHelmChart *v1alpha1.ProjectHelmChart, 
 	}
 }
 
+// getUnableToCreateHelmReleaseStatus returns the status on seeing a conflicting ProjectHelmChart already tracking the desired Helm release
 func (h *handler) getUnableToCreateHelmReleaseStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
 	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
 	return v1alpha1.ProjectHelmChartStatus{
@@ -30,6 +32,8 @@ func (h *handler) getUnableToCreateHelmReleaseStatus(projectHelmChart *v1alpha1.
 	}
 }
 
+// getNoTargetNamespacesStatus returns the status on seeing that a ProjectHelmChart's projectNamespaceSelector (or
+// the Project Registration Namespace's namespaceSelector) targets no namespaces
 func (h *handler) getNoTargetNamespacesStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
 	return v1alpha1.ProjectHelmChartStatus{
 		Status:        "NoTargetProjectNamespaces",
@@ -37,6 +41,7 @@ func (h *handler) getNoTargetNamespacesStatus(projectHelmChart *v1alpha1.Project
 	}
 }
 
+// getValuesParseErrorStatus returns the status on encountering an error with parsing the provided contents of spec.values on the ProjectHelmChart
 func (h *handler) getValuesParseErrorStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
 	// retain existing status if possible
 	projectHelmChartStatus.Status = "UnableToParseValues"
@@ -44,6 +49,9 @@ func (h *handler) getValuesParseErrorStatus(projectHelmChart *v1alpha1.ProjectHe
 	return projectHelmChartStatus
 }
 
+// getWaitingForDashboardValuesStatus returns the transitionary status that occurs after deploying a Helm chart but before a dashboard configmap is created
+// If a ProjectHelmChart is stuck in this status, it is likely either an error on the Operator for not creating this ConfigMap or there might be an issue
+// with the underlying Job ran by the child HelmChart resource created on this ProjectHelmChart's behalf
 func (h *handler) getWaitingForDashboardValuesStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
 	// retain existing status
 	projectHelmChartStatus.Status = "WaitingForDashboardValues"
@@ -52,6 +60,7 @@ func (h *handler) getWaitingForDashboardValuesStatus(projectHelmChart *v1alpha1.
 	return projectHelmChartStatus
 }
 
+// getDeployedStatus returns the status that indicates the ProjectHelmChart is successfully deployed
 func (h *handler) getDeployedStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
 	// retain existing status
 	projectHelmChartStatus.Status = "Deployed"

@@ -17,6 +17,7 @@ import (
 // Note: each resource created in resources.go, registrationdata.go, or releasedata.go should have a resolver handler here
 // The only exception is ProjectHelmCharts since those are handled by the main generating controller
 
+// initResolvers initializes resolvers that need to be set to watch child resources of ProjectHelmCharts
 func (h *handler) initResolvers(ctx context.Context) {
 	if len(h.opts.ProjectLabel) != 0 && len(h.opts.SystemProjectLabelValue) == 0 {
 		// Only trigger watching project release namespace if it is created by the operator

@@ -10,6 +10,8 @@ import (
 
 // Note: each resource created here should have a resolver set in resolvers.go
 
+// getSubjectRoleToSubjectsFromBindings gets all RoleBindings in the Project Registration Namespace that need to be synced to assign the corresponding
+// permission in the Project Release Namespace. See pkg/controllers/project/resources.go for more information on how this is used
 func (h *handler) getSubjectRoleToSubjectsFromBindings(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbacv1.Subject, error) {
 	defaultClusterRoles := common.GetDefaultClusterRoles(h.opts)
 	subjectRoleToSubjects := make(map[string][]rbacv1.Subject)

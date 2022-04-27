@@ -23,10 +23,14 @@ const (
 	ConfigMapInReleaseNamespaceByReleaseName = "helm.cattle.io/configmap-in-release-ns-by-release-name"
 )
 
+// NamespacedBindingReferencesDefaultOperatorRole is the index used to mark a RoleBinding as one that targets
+// one of the default operator roles (supplied in RuntimeOptions under AdminClusterRole, EditClusterRole, and ViewClusterRole)
 func NamespacedBindingReferencesDefaultOperatorRole(namespace string) string {
 	return fmt.Sprintf("%s/%s", namespace, BindingReferencesDefaultOperatorRole)
 }
 
+// initIndexers initializes indexers that allow for more efficient computations on related resources without relying on additional
+// calls to be made to the Kubernetes API by referencing the cache instead
 func (h *handler) initIndexers() {
 	h.projectHelmChartCache.AddIndexer(ProjectHelmChartByReleaseName, h.projectHelmChartToReleaseName)
 

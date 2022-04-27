@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
+// addReconcilers registers reconcilers on the apply object that configure how it reconciles changes to specific resources
 func (h *handler) addReconcilers(apply apply.Apply, dynamic dynamic.Interface) apply.Apply {
 	// force recreate configmaps since configmaps can have errors on updates
 	// for example, if a configmap has been modified to have immutable set to true, it will encounter an error
@@ -24,6 +25,8 @@ func (h *handler) addReconcilers(apply apply.Apply, dynamic dynamic.Interface) a
 	return apply
 }
 
+// forceRecreator is a wrapper on the dynamic.NamespaceableResourceInterface that implements an apply.Reconciler
+// that uses the interface to delete and recreate a dynamic object on reconcile
 type forceRecreator struct {
 	dynamic.NamespaceableResourceInterface
 

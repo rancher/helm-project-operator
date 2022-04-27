@@ -22,6 +22,7 @@ const (
 	HelmProjectOperatorProjectLabel = "helm.cattle.io/projectId"
 )
 
+// HasCleanupLabel returns whether a ProjectHelmChart has the Helm Project Operated label
 func HasHelmProjectOperatedLabel(labels map[string]string) bool {
 	if labels == nil {
 		return false
@@ -30,6 +31,7 @@ func HasHelmProjectOperatedLabel(labels map[string]string) bool {
 	return ok
 }
 
+// GetCommonLabels returns all common labels added to all generated resources
 func GetCommonLabels(projectID string) map[string]string {
 	labels := map[string]string{
 		HelmProjectOperatedLabel: "true",
@@ -48,6 +50,7 @@ const (
 	HelmProjectOperatedNamespaceOrphanedLabel = "helm.cattle.io/helm-project-operator-orphaned"
 )
 
+// GetProjectNamespaceLabels returns the labels to be added to all Project Namespaces
 func GetProjectNamespaceLabels(projectID, projectLabel, projectLabelValue string, isOrphaned bool) map[string]string {
 	labels := GetCommonLabels(projectID)
 	if isOrphaned {
@@ -57,6 +60,8 @@ func GetProjectNamespaceLabels(projectID, projectLabel, projectLabelValue string
 	return labels
 }
 
+// GetProjectNamespaceAnnotations returns the annotations to be added to all Project Namespaces
+// Note: annotations allow integration with Rancher Projects since they handle importing namespaces into Projects
 func GetProjectNamespaceAnnotations(projectID, projectLabel, clusterID string) map[string]string {
 	projectIDWithClusterID := projectID
 	if len(clusterID) > 0 {
@@ -75,6 +80,7 @@ const (
 	HelmProjectOperatorHelmApiVersionLabel = "helm.cattle.io/helm-api-version"
 )
 
+// GetHelmResourceLabels returns the labels to be added to all generated Helm resources (HelmCharts, HelmReleases)
 func GetHelmResourceLabels(projectID, helmApiVersion string) map[string]string {
 	labels := GetCommonLabels(projectID)
 	labels[HelmProjectOperatorHelmApiVersionLabel] = strings.SplitN(helmApiVersion, "/", 2)[0]

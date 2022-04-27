@@ -72,6 +72,7 @@ type RuntimeOptions struct {
 	HardeningOptionsFile string `usage:"Path to file that contains the configuration for the default ServiceAccount and NetworkPolicy deployed on operated namespaces" default:"hardening.yaml" env:"HARDENING_OPTIONS_FILE"`
 }
 
+// Validate validates the provided RuntimeOptions
 func (opts RuntimeOptions) Validate() error {
 	if len(opts.ProjectLabel) > 0 {
 		logrus.Infof("Creating dedicated project registration namespaces to discover ProjectHelmCharts based on the value found for the project label %s on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, HelmProjectOperatedNamespaceOrphanedLabel)

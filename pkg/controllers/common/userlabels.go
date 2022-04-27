@@ -15,6 +15,7 @@ const (
 	HelmProjectOperatedCleanupLabel = "helm.cattle.io/helm-project-operator-cleanup"
 )
 
+// HasCleanupLabel returns whether a ProjectHelmChart has the cleanup label
 func HasCleanupLabel(projectHelmChart *v1alpha1.ProjectHelmChart) bool {
 	if projectHelmChart.Labels == nil {
 		return false

@@ -48,8 +48,6 @@ func Register(
 	namespaces.OnChange(ctx, "harden-hpo-operated-namespace", h.OnChange)
 }
 
-// Single Namespace Handler
-
 func (h *handler) OnChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	if !common.HasHelmProjectOperatedLabel(namespace.Labels) {
 		// only harden operated namespaces

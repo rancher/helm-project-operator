@@ -8,12 +8,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// initSystemNamespaces initializes all System Namespaces on the NamespaceRegister
 func (h *handler) initSystemNamespaces(systemNamespaceList []string, systemNamespaceRegister NamespaceRegister) {
 	for _, namespace := range systemNamespaceList {
 		systemNamespaceRegister.Set(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
 	}
 }
 
+// initProjectRegistrationNamespaces initializes all Project Registration Namespaces on the NamespaceRegister
+// It also automatically triggers the creation of the Project Registration Namespaces if necessary
 func (h *handler) initProjectRegistrationNamespaces() error {
 	namespaceList, err := h.namespaces.List(metav1.ListOptions{})
 	if err != nil {

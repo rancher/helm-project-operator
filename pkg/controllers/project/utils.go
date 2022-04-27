@@ -7,6 +7,7 @@ import (
 	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 )
 
+// getProjectID returns the projectID tied to this ProjectHelmChart
 func (h *handler) getProjectID(projectHelmChart *v1alpha1.ProjectHelmChart) (string, error) {
 	if len(h.opts.ProjectLabel) == 0 {
 		// use the projectHelmChart's name as the projectID
@@ -23,6 +24,7 @@ func (h *handler) getProjectID(projectHelmChart *v1alpha1.ProjectHelmChart) (str
 	return projectID, nil
 }
 
+// getProjectNamespaceSelector returns the projectNamespaceSelector tied to this ProjectHelmChart
 func (h *handler) getProjectNamespaceSelector(projectHelmChart *v1alpha1.ProjectHelmChart, projectID string) map[string]interface{} {
 	if len(h.opts.ProjectLabel) == 0 {
 		// Use the projectHelmChart selector as the namespaceSelector
@@ -50,6 +52,8 @@ func (h *handler) getProjectNamespaceSelector(projectHelmChart *v1alpha1.Project
 	}
 }
 
+// getReleaseNamespaceAndName returns the name of the Project Release namespace and the name of the Helm Release
+// that will be deployed into the Project Release namespace on behalf of the ProjectHelmChart
 func (h *handler) getReleaseNamespaceAndName(projectHelmChart *v1alpha1.ProjectHelmChart) (string, string) {
 	projectReleaseName := fmt.Sprintf("%s-%s", projectHelmChart.Name, h.opts.ReleaseName)
 	if h.opts.Singleton {

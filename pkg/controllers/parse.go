@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+// parseValuesAndQuestions parses the base64TgzChart and emits the values.yaml and questions.yaml contained within it
+// If values.yaml or questions.yaml are not specified, it will return an empty string for each
 func parseValuesAndQuestions(base64TgzChart string) (string, string, error) {
 	tgzChartBytes, err := base64.StdEncoding.DecodeString(base64TgzChart)
 	if err != nil {

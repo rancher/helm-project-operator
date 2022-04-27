@@ -14,6 +14,11 @@ import (
 
 // Note: each resource created here should have a resolver set in resolvers.go
 
+// getDashboardValuesFromConfigMaps returns the generic map that represents a merge of all the contents of all ConfigMaps in the
+// Project Release Namespace with the label helm.cattle.io/dashboard-values-configmap: {{ .Release.Name }}.
+//
+// Generally, these ConfigMaps should be part of the deployed Helm chart and should not have conflicts with each other
+// It's also a common pattern to only have a single ConfigMap that this refers to.
 func (h *handler) getDashboardValuesFromConfigmaps(projectHelmChart *v1alpha1.ProjectHelmChart) (v1alpha1.GenericMap, error) {
 	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
 	exists, err := h.verifyReleaseNamespaceExists(releaseNamespace)
@@ -49,6 +54,8 @@ func (h *handler) getDashboardValuesFromConfigmaps(projectHelmChart *v1alpha1.Pr
 	return values, nil
 }
 
+// getSubjectRoleToRoleRefsFromRoles gets all Roles in the Project Release Namespace that need RoleBindings to be created automatically
+// based on permissions set in the Project Registration namespace. See pkg/controllers/project/resources.go for more information on how this is used
 func (h *handler) getSubjectRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.ProjectHelmChart) (map[string][]rbacv1.RoleRef, error) {
 	subjectRoleToRoleRefs := make(map[string][]rbacv1.RoleRef)
 	for subjectRole := range common.GetDefaultClusterRoles(h.opts) {

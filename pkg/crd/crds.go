@@ -21,6 +21,14 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// WriteFiles writes CRDs and dependent CRDs to the paths specified
+//
+// Note: It is recommended to write CRDs to the templates directory (or similar) and to write
+// CRD dependencies to the crds/ directory since you do not want the uninstall or upgrade of the
+// CRD chart to destroy existing dependent CRDs in the cluster as that could break other components
+//
+// i.e. if you uninstall the HelmChart CRD, it can destroy an RKE2 or K3s cluster that also uses those CRs
+// to manage internal Kubernetes component state
 func WriteFiles(crdDirpath, crdDepDirpath string) error {
 	objs, depObjs, err := Objects(false)
 	if err != nil {
@@ -76,6 +84,7 @@ func writeFiles(dirpath string, objs []runtime.Object) error {
 	return nil
 }
 
+// Print prints CRDs to out and dependent CRDs to depOut
 func Print(out io.Writer, depOut io.Writer) {
 	objs, depObjs, err := Objects(false)
 	if err != nil {
@@ -110,6 +119,7 @@ func print(out io.Writer, objs []runtime.Object, objsV1Beta1 []runtime.Object) e
 	return err
 }
 
+// Objects returns runtime.Objects for every CRD or CRD Dependency this operator relies on
 func Objects(v1beta1 bool) (crds, crdDeps []runtime.Object, err error) {
 	crdDefs, crdDepDefs := List()
 	crds, err = objects(v1beta1, crdDefs)
@@ -142,6 +152,7 @@ func objects(v1beta1 bool, crdDefs []crd.CRD) (crds []runtime.Object, err error)
 	return
 }
 
+// List returns the list of CRDs and dependent CRDs for this operator
 func List() ([]crd.CRD, []crd.CRD) {
 	crds := []crd.CRD{
 		newCRD(&v1alpha1.ProjectHelmChart{}, func(c crd.CRD) crd.CRD {
@@ -157,6 +168,7 @@ func List() ([]crd.CRD, []crd.CRD) {
 	return crds, crdDeps
 }
 
+// Create creates all CRDs and dependent CRDs in the cluster
 func Create(ctx context.Context, cfg *rest.Config) error {
 	factory, err := crd.NewFactoryFromClient(cfg)
 	if err != nil {

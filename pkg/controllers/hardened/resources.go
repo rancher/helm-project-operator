@@ -23,6 +23,7 @@ var (
 	}
 )
 
+// getDefaultServiceAccount returns the default service account configured for this Helm Project Operated namespace
 func (h *handler) getDefaultServiceAccount(namespace *corev1.Namespace) *corev1.ServiceAccount {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -48,6 +49,7 @@ func (h *handler) getDefaultServiceAccount(namespace *corev1.Namespace) *corev1.
 	return serviceAccount
 }
 
+// getNetworkPolicy returns the default Helm Project Operator generated NetworkPolicy configured for this Helm Project Operated namespace
 func (h *handler) getNetworkPolicy(namespace *corev1.Namespace) *networkingv1.NetworkPolicy {
 	networkPolicy := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{

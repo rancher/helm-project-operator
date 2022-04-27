@@ -4,6 +4,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
+// GetDefaultClusterRoles returns the default ClusterRoles that this operator was started with
 func GetDefaultClusterRoles(opts Options) map[string]string {
 	clusterRoles := make(map[string]string)
 	if len(opts.AdminClusterRole) > 0 {
@@ -18,6 +19,8 @@ func GetDefaultClusterRoles(opts Options) map[string]string {
 	return clusterRoles
 }
 
+// IsDefaultClusterRoleRef returns whether the provided name is a default ClusterRole ref that this operator was
+// started with (e.g. the values provided to AdminClusterRole, EditClusterRole, or ViewClusterRole in RuntimeOptions)
 func IsDefaultClusterRoleRef(opts Options, roleRefName string) (string, bool) {
 	for subjectRole, defaultClusterRoleName := range GetDefaultClusterRoles(opts) {
 		if roleRefName == defaultClusterRoleName {
@@ -27,6 +30,8 @@ func IsDefaultClusterRoleRef(opts Options, roleRefName string) (string, bool) {
 	return "", false
 }
 
+// FilterToUsersAndGroups returns a subset of the provided subjects that are only Users and Groups
+// i.e. it filters out ServiceAccount subjects
 func FilterToUsersAndGroups(subjects []rbacv1.Subject) []rbacv1.Subject {
 	var filtered []rbacv1.Subject
 	for _, subject := range subjects {

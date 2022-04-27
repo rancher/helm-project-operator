@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+// configureApplyForNamespace configures the apply to treat the provided namespace as an owner
 func (h *handler) configureApplyForNamespace(namespace *corev1.Namespace) apply.Apply {
 	return h.apply.
 		WithOwner(namespace).
@@ -17,7 +18,12 @@ func (h *handler) configureApplyForNamespace(namespace *corev1.Namespace) apply.
 		WithSetID(fmt.Sprintf("%s-%s-data", namespace.Name, h.opts.ReleaseName))
 }
 
+// getProjectIDFromNamespaceLabels returns projectIDs based on the label on the project
 func (h *handler) getProjectIDFromNamespaceLabels(namespace *corev1.Namespace) (string, bool) {
+	if len(h.opts.ProjectLabel) == 0 {
+		// nothing to do, namespaces are not project scoped
+		return "", false
+	}
 	labels := namespace.GetLabels()
 	if labels == nil {
 		return "", false
@@ -26,6 +32,7 @@ func (h *handler) getProjectIDFromNamespaceLabels(namespace *corev1.Namespace) (
 	return projectID, namespaceInProject
 }
 
+// enqueueProjectHelmChartsForNamespace simply enqueues all ProjectHelmCharts in a namespace
 func (h *handler) enqueueProjectHelmChartsForNamespace(namespace *corev1.Namespace) error {
 	projectHelmCharts, err := h.projectHelmChartCache.List(namespace.Name, labels.Everything())
 	if err != nil {

@@ -12,7 +12,12 @@ import (
 // Note: each resource created here should have a resolver set in resolvers.go
 // The only exception is namespaces since those are handled by the main controller OnChange
 
+// getProjectRegistrationNamespace returns the namespace created on behalf of a new Project that has been identified based on
+// unique values observed for all namespaces with the label h.opts.ProjectLabel
 func (h *handler) getProjectRegistrationNamespace(projectID string, isOrphaned bool, namespace *corev1.Namespace) *corev1.Namespace {
+	if len(h.opts.ProjectLabel) == 0 {
+		return nil
+	}
 	return &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        fmt.Sprintf(common.ProjectRegistrationNamespaceFmt, projectID),
@@ -22,6 +27,7 @@ func (h *handler) getProjectRegistrationNamespace(projectID string, isOrphaned b
 	}
 }
 
+// getConfigMap returns the values.yaml and questions.yaml ConfigMap that is expected to be created in all Project Registration Namespaces
 func (h *handler) getConfigMap(projectID string, namespace *corev1.Namespace) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -36,6 +42,7 @@ func (h *handler) getConfigMap(projectID string, namespace *corev1.Namespace) *c
 	}
 }
 
+// getConfigMap name returns the name of the ConfigMap to be deployed in all Project Registration Namespaces
 func (h *handler) getConfigMapName() string {
 	return strings.ReplaceAll(h.opts.HelmApiVersion, "/", ".")
 }
