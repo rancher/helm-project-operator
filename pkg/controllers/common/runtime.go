@@ -1,5 +1,7 @@
 package common
 
+import "github.com/sirupsen/logrus"
+
 type RuntimeOptions struct {
 	// Namespace is the systemNamespace to create HelmCharts and HelmReleases in
 	// It's generally expected that this namespace is not widely accessible by all users in your cluster; it's recommended that it is placed
@@ -52,4 +54,26 @@ type RuntimeOptions struct {
 	// 'helm.cattle.io/project-helm-chart-role': '<helm-release>' and 'helm.cattle.io/project-helm-chart-role-aggregate-from': 'view'
 	// based on ClusterRoleBindings or RoleBindings in the Project Registration namespace tied to the provided ClusterRole, if it exists
 	ViewClusterRole string `usage:"ClusterRole tied to view users who should have permissions in the Project Release Namespace" env:"VIEW_CLUSTER_ROLE"`
+}
+
+func (opts RuntimeOptions) Validate() error {
+	if len(opts.ProjectLabel) > 0 {
+		logrus.Infof("Creating dedicated project registration namespaces to discover ProjectHelmCharts based on the value found for the project label %s on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, HelmProjectOperatedNamespaceOrphanedLabel)
+		if len(opts.SystemProjectLabelValue) > 0 {
+			logrus.Infof("assuming namespaces tagged with %s=%s are also system namespaces", opts.ProjectLabel, opts.SystemProjectLabelValue)
+		}
+		if len(opts.ClusterID) > 0 {
+			logrus.Infof("Marking project registration namespaces with %s=%s:<projectID>", opts.ProjectLabel, opts.ClusterID)
+		}
+	}
+
+	if len(opts.HelmJobImage) > 0 {
+		logrus.Infof("Using %s as spec.JobImage on all generated HelmChart resources", opts.HelmJobImage)
+	}
+
+	if len(opts.NodeName) > 0 {
+		logrus.Infof("Marking events as being sourced from node %s", opts.NodeName)
+	}
+
+	return nil
 }

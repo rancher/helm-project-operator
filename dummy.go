@@ -48,24 +48,14 @@ func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	if err := operator.Init(ctx, o.Namespace, cfg, common.Options{
-		// These fields are provided by the Project Operator
-		HelmApiVersion:   DummyHelmApiVersion,
-		ReleaseName:      DummyReleaseName,
-		SystemNamespaces: DummySystemNamespaces,
-		ChartContent:     base64TgzChart,
-		Singleton:        false,
-
-		// These fields are provided on runtime for all project operators
-		ProjectLabel:            o.ProjectLabel,
-		SystemProjectLabelValue: o.SystemProjectLabelValue,
-		SystemDefaultRegistry:   o.SystemDefaultRegistry,
-		CattleURL:               o.CattleURL,
-		ClusterID:               o.ClusterID,
-		NodeName:                o.NodeName,
-		HelmJobImage:            o.HelmJobImage,
-		AdminClusterRole:        o.AdminClusterRole,
-		EditClusterRole:         o.EditClusterRole,
-		ViewClusterRole:         o.ViewClusterRole,
+		OperatorOptions: common.OperatorOptions{
+			HelmApiVersion:   DummyHelmApiVersion,
+			ReleaseName:      DummyReleaseName,
+			SystemNamespaces: DummySystemNamespaces,
+			ChartContent:     base64TgzChart,
+			Singleton:        false,
+		},
+		RuntimeOptions: o.RuntimeOptions,
 	}); err != nil {
 		return err
 	}
