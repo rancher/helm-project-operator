@@ -252,7 +252,7 @@ func (h *handler) updateNamespaceWithHelmOperatorProjectLabel(namespace *corev1.
 		// no need to update a namespace about to be deleted
 		return nil
 	}
-	if len(h.opts.SystemProjectLabelValue) == 0 {
+	if len(h.opts.ProjectReleaseLabelValue) == 0 {
 		// do nothing, this annotation is irrelevant unless we create release namespaces
 		return nil
 	}
@@ -302,10 +302,23 @@ func (h *handler) isSystemNamespace(namespace *corev1.Namespace) bool {
 	if isTrackedSystemNamespace {
 		return true
 	}
-	if len(h.opts.SystemProjectLabelValue) != 0 {
+
+	var systemProjectLabelValues []string
+	if len(h.opts.SystemProjectLabelValues) != 0 {
+		systemProjectLabelValues = append(systemProjectLabelValues, h.opts.SystemProjectLabelValues...)
+	}
+	if len(h.opts.ProjectReleaseLabelValue) != 0 {
+		systemProjectLabelValues = append(systemProjectLabelValues, h.opts.ProjectReleaseLabelValue)
+	}
+	projectID, inProject := h.getProjectIDFromNamespaceLabels(namespace)
+	if !inProject {
+		return false
+	}
+	for _, systemProjectLabelValue := range systemProjectLabelValues {
 		// check if labels indicate this is a system project
-		projectID, inProject := h.getProjectIDFromNamespaceLabels(namespace)
-		return inProject && projectID == h.opts.SystemProjectLabelValue
+		if projectID == systemProjectLabelValue {
+			return true
+		}
 	}
 	return false
 }

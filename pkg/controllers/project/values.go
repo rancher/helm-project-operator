@@ -27,7 +27,7 @@ func (h *handler) getValues(projectHelmChart *v1alpha1.ProjectHelmChart, project
 				"clusterId":                h.opts.ClusterID,
 				"projectNamespaces":        targetProjectNamespaces,
 				"projectID":                projectID,
-				"systemProjectID":          h.opts.SystemProjectLabelValue,
+				"releaseProjectID":         h.opts.ProjectReleaseLabelValue,
 				"projectNamespaceSelector": h.getProjectNamespaceSelector(projectHelmChart, projectID),
 			},
 		},

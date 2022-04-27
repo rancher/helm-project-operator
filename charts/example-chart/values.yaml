@@ -4,8 +4,8 @@ global:
     projectID: ""
     projectNamespaces: []
     projectNamespaceSelector: {}
+    releaseProjectID: ""
     systemDefaultRegistry: ""
-    systemProjectID: ""
     url: ""
 
 data:

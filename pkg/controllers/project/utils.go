@@ -36,7 +36,7 @@ func (h *handler) getProjectNamespaceSelector(projectHelmChart *v1alpha1.Project
 			"matchExpressions": projectHelmChart.Spec.ProjectNamespaceSelector.MatchExpressions,
 		}
 	}
-	if len(h.opts.SystemProjectLabelValue) == 0 {
+	if len(h.opts.ProjectReleaseLabelValue) == 0 {
 		// Release namespace is not created, so use namespaceSelector provided tied to projectID
 		return map[string]interface{}{
 			"matchLabels": map[string]string{
@@ -60,7 +60,7 @@ func (h *handler) getReleaseNamespaceAndName(projectHelmChart *v1alpha1.ProjectH
 		// This changes the naming scheme of the deployed resources such that only one can every be created per namespace
 		projectReleaseName = fmt.Sprintf("%s-%s", projectHelmChart.Namespace, h.opts.ReleaseName)
 	}
-	if len(h.opts.ProjectLabel) == 0 || len(h.opts.SystemProjectLabelValue) == 0 {
+	if len(h.opts.ProjectLabel) == 0 || len(h.opts.ProjectReleaseLabelValue) == 0 {
 		// Underlying Helm releases will be created in the namespace where the ProjectHelmChart is registered (project registration namespace)
 		// The project registration namespace will either be the system namespace or auto-generated namespaces depending on the user values provided
 		return projectHelmChart.Namespace, projectReleaseName

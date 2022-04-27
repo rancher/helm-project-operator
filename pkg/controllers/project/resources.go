@@ -60,8 +60,8 @@ func (h *handler) getProjectReleaseNamespace(projectID string, isOrphaned bool, 
 	projectReleaseNamespace := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        releaseNamespace,
-			Annotations: common.GetProjectNamespaceAnnotations(h.opts.SystemProjectLabelValue, h.opts.ProjectLabel, h.opts.ClusterID),
-			Labels:      common.GetProjectNamespaceLabels(projectID, h.opts.ProjectLabel, h.opts.SystemProjectLabelValue, isOrphaned),
+			Annotations: common.GetProjectNamespaceAnnotations(h.opts.ProjectReleaseLabelValue, h.opts.ProjectLabel, h.opts.ClusterID),
+			Labels:      common.GetProjectNamespaceLabels(projectID, h.opts.ProjectLabel, h.opts.ProjectReleaseLabelValue, isOrphaned),
 		},
 	}
 	return projectReleaseNamespace

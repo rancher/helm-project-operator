@@ -19,7 +19,7 @@ import (
 
 // initResolvers initializes resolvers that need to be set to watch child resources of ProjectHelmCharts
 func (h *handler) initResolvers(ctx context.Context) {
-	if len(h.opts.ProjectLabel) != 0 && len(h.opts.SystemProjectLabelValue) == 0 {
+	if len(h.opts.ProjectLabel) != 0 && len(h.opts.ProjectReleaseLabelValue) == 0 {
 		// Only trigger watching project release namespace if it is created by the operator
 		relatedresource.Watch(
 			ctx, "watch-project-release-namespace", h.resolveProjectReleaseNamespace, h.projectHelmCharts,

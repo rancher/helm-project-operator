@@ -14,11 +14,11 @@ const (
 	// HelmProjectOperatedLabel marks all HelmCharts, HelmReleases, and namespaces created by this operator
 	HelmProjectOperatedLabel = "helm.cattle.io/helm-project-operated"
 
-	// HelmProjectOperatorProjectLabel is applied to all namespaces targeted by a project only if SystemProjectLabelValue and
-	// ProjectLabel are provided, in which case the release namespace of the HelmChart that is deployed will be auto-generated
-	// and imported into the system project; since the value of the provided ProjectLabel will not match the value of the ProjectLabel
-	// on the generated namespace, this label needs to be added to create a consistent set of labels for global.cattle.projectNamespaceSelector
-	// to be able to target
+	// HelmProjectOperatorProjectLabel is applied to the Project Registration Namespace, the ProjectReleaseNamespace, and
+	// (only if both ProjectLabel and ProjectReleaseLabelValue are provided) to all Project namespaces
+	//
+	// If ProjectLabel and ProjectReleaseLabelValue are supplied, this label will be supplied to the global.cattle.projectNamespaceSelector
+	// to identify all namespaces tied to a given project
 	HelmProjectOperatorProjectLabel = "helm.cattle.io/projectId"
 )
 

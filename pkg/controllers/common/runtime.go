@@ -34,11 +34,18 @@ type RuntimeOptions struct {
 	// example: field.cattle.io/projectId
 	ProjectLabel string `usage:"Label on namespaces to create Project Registration Namespaces and watch for ProjectHelmCharts" env:"PROJECT_LABEL"`
 
-	// SystemProjectLabelValue is the value of the ProjectLabel that identifies system namespaces. Does nothing if ProjectLabel is not provided
+	// SystemProjectLabelValues are values of ProjectLabel that identify system namespaces. Does nothing if ProjectLabel is not provided
 	// example: p-ranch
-	// If both this and the above example are provided, any namespaces with label 'field.cattle.io/projectId: p-ranch' will be treated
-	// as a systemNamespace, which means that no ProjectHelmChart will be allowed to select it
-	SystemProjectLabelValue string `usage:"Value on project label on namespaces that marks it as a system namespace" env:"SYSTEM_PROJECT_LABEL_VALUE"`
+	// If both this and the ProjectLabel example are provided, any namespaces with label 'field.cattle.io/projectId: <system-project-label-value>'
+	// will be treated as a systemNamespace, which means that no ProjectHelmChart will be allowed to select it
+	SystemProjectLabelValues []string `usage:"Values on project label on namespaces that marks it as a system namespace" env:"SYSTEM_PROJECT_LABEL_VALUE"`
+
+	// ProjectReleaseLabelValue is the value of the ProjectLabel that should be added to Project Release Namespaces. Does nothing if ProjectLabel is not provided
+	// example: p-ranch
+	// If provided, dedicated Project Release namespaces will be created in the cluster for each ProjectHelmChart that needs a Helm Release
+	// The created Project Release namespaces will also automatically be identified as a System Project Namespaces based on this label, so other
+	// namespaces with this label value will be treated as a system namespace as well
+	ProjectReleaseLabelValue string `usage:"Value on project label on namespaces that marks it as a system namespace" env:"SYSTEM_PROJECT_LABEL_VALUE"`
 
 	// AdminClusterRole configures the operator to automaticaly create RoleBindings on Roles in the Project Release Namespace marked with
 	// 'helm.cattle.io/project-helm-chart-role': '<helm-release>' and 'helm.cattle.io/project-helm-chart-role-aggregate-from': 'admin'
@@ -76,8 +83,14 @@ type RuntimeOptions struct {
 func (opts RuntimeOptions) Validate() error {
 	if len(opts.ProjectLabel) > 0 {
 		logrus.Infof("Creating dedicated project registration namespaces to discover ProjectHelmCharts based on the value found for the project label %s on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, HelmProjectOperatedNamespaceOrphanedLabel)
-		if len(opts.SystemProjectLabelValue) > 0 {
-			logrus.Infof("assuming namespaces tagged with %s=%s are also system namespaces", opts.ProjectLabel, opts.SystemProjectLabelValue)
+		if len(opts.SystemProjectLabelValues) > 0 {
+			for _, systemProjectLabel := range opts.SystemProjectLabelValues {
+				logrus.Infof("Assuming namespaces tagged with %s=%s are also system namespaces", opts.ProjectLabel, systemProjectLabel)
+			}
+		}
+		if len(opts.ProjectReleaseLabelValue) > 0 {
+			logrus.Infof("Assuming namespaces tagged with %s=%s are also system namespaces", opts.ProjectLabel, opts.ProjectReleaseLabelValue)
+			logrus.Infof("Creating dedicated project release namespaces for ProjectHelmCharts with label '%s': '%s'; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, opts.ProjectReleaseLabelValue, HelmProjectOperatedNamespaceOrphanedLabel)
 		}
 		if len(opts.ClusterID) > 0 {
 			logrus.Infof("Marking project registration namespaces with %s=%s:<projectID>", opts.ProjectLabel, opts.ClusterID)

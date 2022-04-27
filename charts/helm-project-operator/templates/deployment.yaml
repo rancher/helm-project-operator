@@ -33,8 +33,19 @@ spec:
 {{- if .Values.global.cattle.projectLabel }}
           - --project-label={{ .Values.global.cattle.projectLabel }}
 {{- end }}
-{{- if .Values.global.cattle.systemProjectId }}
-          - --system-project-label-value={{ .Values.global.cattle.systemProjectId }}
+{{- if not .Values.projectReleaseNamespaces.enabled }}
+          - --system-project-label-values={{ join "," (append .Values.otherSystemProjectLabelValues .Values.global.cattle.systemProjectId) }}
+{{- else if and (ne (len .Values.global.cattle.systemProjectId) 0) (ne (len .Values.projectReleaseNamespaces.labelValue) 0) (ne .Values.projectReleaseNamespaces.labelValue .Values.global.cattle.systemProjectId) }}
+          - --system-project-label-values={{ join "," (append .Values.otherSystemProjectLabelValues .Values.global.cattle.systemProjectId) }}
+{{- else if len .Values.otherSystemProjectLabelValues }}
+          - --system-project-label-values={{ join "," .Values.otherSystemProjectLabelValues }}
+{{- end }}
+{{- if .Values.projectReleaseNamespaces.enabled }}
+{{- if .Values.projectReleaseNamespaces.labelValue }}
+          - --project-release-label-value={{ .Values.projectReleaseNamespaces.labelValue }}
+{{- else if .Values.global.cattle.systemProjectId }}
+          - --project-release-label-value={{ .Values.global.cattle.systemProjectId }}
+{{- end }}
 {{- end }}
 {{- if .Values.global.cattle.clusterId }}
           - --cluster-id={{ .Values.global.cattle.clusterId }}
