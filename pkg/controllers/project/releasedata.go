@@ -2,6 +2,7 @@ package project
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
@@ -28,7 +29,7 @@ func (h *handler) getDashboardValuesFromConfigmaps(projectHelmChart *v1alpha1.Pr
 	if !exists {
 		return nil, nil
 	}
-	configMaps, err := h.configmapCache.GetByIndex(ConfigMapInReleaseNamespaceByReleaseName, releaseName)
+	configMaps, err := h.configmapCache.GetByIndex(ConfigMapInReleaseNamespaceByReleaseNamespaceName, fmt.Sprintf("%s/%s", releaseNamespace, releaseName))
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +74,7 @@ func (h *handler) getSubjectRoleToRoleRefsFromRoles(projectHelmChart *v1alpha1.P
 	if !exists {
 		return nil, nil
 	}
-	roles, err := h.roleCache.GetByIndex(RoleInReleaseNamespaceByReleaseName, releaseName)
+	roles, err := h.roleCache.GetByIndex(RoleInReleaseNamespaceByReleaseNamespaceName, fmt.Sprintf("%s/%s", releaseNamespace, releaseName))
 	if err != nil {
 		return nil, err
 	}

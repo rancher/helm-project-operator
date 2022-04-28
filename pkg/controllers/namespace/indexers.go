@@ -16,6 +16,9 @@ func (h *handler) initIndexers() {
 }
 
 func (h *handler) namespaceToProjectIDExcludingRegistration(namespace *corev1.Namespace) ([]string, error) {
+	if namespace == nil {
+		return nil, nil
+	}
 	if h.isSystemNamespace(namespace) {
 		return nil, nil
 	}

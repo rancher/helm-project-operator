@@ -19,8 +19,8 @@ const (
 	BindingReferencesDefaultOperatorRole        = "bound-to-default-role"
 
 	// Release namespaces only
-	RoleInReleaseNamespaceByReleaseName      = "helm.cattle.io/role-in-release-ns-by-release-name"
-	ConfigMapInReleaseNamespaceByReleaseName = "helm.cattle.io/configmap-in-release-ns-by-release-name"
+	RoleInReleaseNamespaceByReleaseNamespaceName      = "helm.cattle.io/role-in-release-ns-by-release-namespace-name"
+	ConfigMapInReleaseNamespaceByReleaseNamespaceName = "helm.cattle.io/configmap-in-release-ns-by-release-namespace-name"
 )
 
 // NamespacedBindingReferencesDefaultOperatorRole is the index used to mark a RoleBinding as one that targets
@@ -38,17 +38,23 @@ func (h *handler) initIndexers() {
 
 	h.clusterrolebindingCache.AddIndexer(ClusterRoleBindingByRoleRef, h.clusterRoleBindingToRoleRef)
 
-	h.roleCache.AddIndexer(RoleInReleaseNamespaceByReleaseName, h.roleInReleaseNamespaceToReleaseName)
+	h.roleCache.AddIndexer(RoleInReleaseNamespaceByReleaseNamespaceName, h.roleInReleaseNamespaceToReleaseNamespaceName)
 
-	h.configmapCache.AddIndexer(ConfigMapInReleaseNamespaceByReleaseName, h.configMapInReleaseNamespaceToReleaseName)
+	h.configmapCache.AddIndexer(ConfigMapInReleaseNamespaceByReleaseNamespaceName, h.configMapInReleaseNamespaceToReleaseNamespaceName)
 }
 
 func (h *handler) projectHelmChartToReleaseName(projectHelmChart *v1alpha1.ProjectHelmChart) ([]string, error) {
+	if projectHelmChart == nil {
+		return nil, nil
+	}
 	_, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
 	return []string{releaseName}, nil
 }
 
 func (h *handler) roleBindingInRegistrationNamespaceToRoleRef(rb *rbacv1.RoleBinding) ([]string, error) {
+	if rb == nil {
+		return nil, nil
+	}
 	isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(rb.Namespace)
 	if err != nil {
 		return nil, err
@@ -67,6 +73,9 @@ func (h *handler) roleBindingInRegistrationNamespaceToRoleRef(rb *rbacv1.RoleBin
 }
 
 func (h *handler) clusterRoleBindingToRoleRef(crb *rbacv1.ClusterRoleBinding) ([]string, error) {
+	if crb == nil {
+		return nil, nil
+	}
 	_, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, crb.RoleRef.Name)
 	if !isDefaultRoleRef {
 		// we only care about rolebindings in the registration namespace that are tied to the default roles
@@ -77,11 +86,17 @@ func (h *handler) clusterRoleBindingToRoleRef(crb *rbacv1.ClusterRoleBinding) ([
 	return []string{BindingReferencesDefaultOperatorRole}, nil
 }
 
-func (h *handler) roleInReleaseNamespaceToReleaseName(role *rbacv1.Role) ([]string, error) {
+func (h *handler) roleInReleaseNamespaceToReleaseNamespaceName(role *rbacv1.Role) ([]string, error) {
+	if role == nil {
+		return nil, nil
+	}
 	return h.getReleaseIndexFromNamespaceAndLabels(role.Namespace, role.Labels, common.HelmProjectOperatorProjectHelmChartRoleLabel)
 }
 
-func (h *handler) configMapInReleaseNamespaceToReleaseName(configmap *corev1.ConfigMap) ([]string, error) {
+func (h *handler) configMapInReleaseNamespaceToReleaseNamespaceName(configmap *corev1.ConfigMap) ([]string, error) {
+	if configmap == nil {
+		return nil, nil
+	}
 	return h.getReleaseIndexFromNamespaceAndLabels(configmap.Namespace, configmap.Labels, common.HelmProjectOperatorDashboardValuesConfigMapLabel)
 }
 
@@ -94,31 +109,5 @@ func (h *handler) getReleaseIndexFromNamespaceAndLabels(namespace string, labels
 		return nil, nil
 	}
 
-	// note: just checking the release label here is not sufficient since it's possible that someone could
-	// create a configMap or role in a non-release namespace and tie it to this index if so. We need to
-	// grab all ProjectHelmCharts so we can go from release-name -> release-namespace and verify that the
-	// object marked with this label also exists in the correct release namespace for a ProjectHelmChart
-	// tied to this release
-
-	// grab all projectHelmChart tied to this release
-	projectHelmCharts, err := h.projectHelmChartCache.GetByIndex(ProjectHelmChartByReleaseName, releaseName)
-	if err != nil {
-		return nil, err
-	}
-	if len(projectHelmCharts) == 0 {
-		// release name is invalid, it doesn't correspond to a project helm chart
-		return nil, nil
-	}
-	for _, projectHelmChart := range projectHelmCharts {
-		if projectHelmChart == nil {
-			continue
-		}
-		releaseNamespace, _ := h.getReleaseNamespaceAndName(projectHelmChart)
-		if releaseNamespace == namespace {
-			// key on object both matches an existing release and is in the namespace of that given release
-			// therefore, we can tie this object to this release
-			return []string{releaseName}, nil
-		}
-	}
-	return nil, nil
+	return []string{fmt.Sprintf("%s/%s", namespace, releaseName)}, nil
 }
