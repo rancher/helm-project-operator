@@ -1,6 +1,14 @@
 package common
 
-import "github.com/sirupsen/logrus"
+import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
+	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+)
 
 type RuntimeOptions struct {
 	// Namespace is the systemNamespace to create HelmCharts and HelmReleases in
@@ -77,6 +85,9 @@ type RuntimeOptions struct {
 	// By default, the default service account of the namespace is patched to disable automountServiceAccountToken
 	// By default, a default NetworkPolicy is deployed in the namespace that selects all pods in the namespace and limits all ingress and egress
 	HardeningOptionsFile string `usage:"Path to file that contains the configuration for the default ServiceAccount and NetworkPolicy deployed on operated namespaces" default:"hardening.yaml" env:"HARDENING_OPTIONS_FILE"`
+
+	// ValuesOverrideFile is the path to the file that contains operated-provided overrides on the values.yaml that should be applied for each ProjectHelmChart
+	ValuesOverrideFile string `usage:"Path to file that contains values.yaml overrides supplied by the operator" default:"values.yaml" env:"VALUES_OVERRIDE_FILE"`
 }
 
 // Validate validates the provided RuntimeOptions
@@ -112,4 +123,27 @@ func (opts RuntimeOptions) Validate() error {
 	}
 
 	return nil
+}
+
+// LoadHardeningOptionsFromFile unmarshalls the struct found at the file to YAML and reads it into memory
+func LoadValuesOverrideFromFile(path string) (v1alpha1.GenericMap, error) {
+	var valuesOverride v1alpha1.GenericMap
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	abspath := filepath.Join(wd, path)
+	_, err = os.Stat(abspath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// we just assume the default is used
+			err = nil
+		}
+		return nil, err
+	}
+	valuesOverrideBytes, err := ioutil.ReadFile(abspath)
+	if err != nil {
+		return nil, err
+	}
+	return valuesOverride, yaml.Unmarshal(valuesOverrideBytes, &valuesOverride)
 }

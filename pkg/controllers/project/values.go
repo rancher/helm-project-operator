@@ -20,6 +20,9 @@ func (h *handler) getValues(projectHelmChart *v1alpha1.ProjectHelmChart, project
 	// overlay provided values, which will override the above values if provided
 	values = data.MergeMaps(values, projectHelmChart.Spec.Values)
 
+	// overlay operator provided values overrides, which will override the above values even if provided
+	values = data.MergeMaps(values, h.valuesOverride)
+
 	// required project-based values that must be set even if user tries to override them
 	requiredOverrides := map[string]interface{}{
 		"global": map[string]interface{}{

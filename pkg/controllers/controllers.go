@@ -136,9 +136,14 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.Dynamic,
 	)
 
+	valuesOverride, err := common.LoadValuesOverrideFromFile(opts.ValuesOverrideFile)
+	if err != nil {
+		return err
+	}
 	project.Register(ctx,
 		systemNamespace,
 		opts,
+		valuesOverride,
 		appCtx.Apply,
 		// watches
 		appCtx.ProjectHelmChart(),

@@ -26,6 +26,7 @@ var (
 type handler struct {
 	systemNamespace         string
 	opts                    common.Options
+	valuesOverride          v1alpha1.GenericMap
 	apply                   apply.Apply
 	projectHelmCharts       helmprojectcontroller.ProjectHelmChartController
 	projectHelmChartCache   helmprojectcontroller.ProjectHelmChartCache
@@ -48,6 +49,7 @@ func Register(
 	ctx context.Context,
 	systemNamespace string,
 	opts common.Options,
+	valuesOverride v1alpha1.GenericMap,
 	apply apply.Apply,
 	projectHelmCharts helmprojectcontroller.ProjectHelmChartController,
 	projectHelmChartCache helmprojectcontroller.ProjectHelmChartCache,
@@ -78,6 +80,7 @@ func Register(
 	h := &handler{
 		systemNamespace:         systemNamespace,
 		opts:                    opts,
+		valuesOverride:          valuesOverride,
 		apply:                   apply,
 		projectHelmCharts:       projectHelmCharts,
 		projectHelmChartCache:   projectHelmChartCache,

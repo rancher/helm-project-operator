@@ -41,6 +41,10 @@ global:
 
 helmApiVersion: dummy.cattle.io/v1alpha1
 
+## valuesOverride overrides values that are set on each ProjectHelmChart deployment on an operator-level
+## User-provided values will be overwritten based on the values provided here
+valuesOverride: {}
+
 ## projectReleaseNamespaces are auto-generated namespaces that are created to host Helm Releases
 ## managed by this operator on behalf of a ProjectHelmChart
 projectReleaseNamespaces:
