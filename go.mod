@@ -13,7 +13,7 @@ replace (
 )
 
 require (
-	github.com/aiyengar2/helm-locker v0.0.0-20220426162702-0076bacfa71f
+	github.com/aiyengar2/helm-locker v0.0.0-20220428185851-b6b31459da49
 	github.com/k3s-io/helm-controller v0.12.0
 	github.com/rancher/lasso v0.0.0-20220303220127-8cf5555ec03c
 	github.com/rancher/wrangler v0.8.11-0.20220217210408-3ecd23dfea3b
