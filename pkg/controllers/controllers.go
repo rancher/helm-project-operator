@@ -57,7 +57,7 @@ type appContext struct {
 	Networking networkingcontroller.Interface
 
 	HelmLocker        helmlockercontroller.Interface
-	ObjectSetRegister objectset.LockableObjectSetRegister
+	ObjectSetRegister objectset.LockableRegister
 	ObjectSetHandler  *controller.SharedHandler
 
 	HelmController k3shelmcontroller.Interface
@@ -281,7 +281,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 
 	// Helm Locker Controllers - should be scoped to the system namespace only
 
-	objectSet, objectSetRegister, objectSetHandler := objectset.NewLockableObjectSetRegister("object-set-register", apply, scf, discovery, nil)
+	objectSet, objectSetRegister, objectSetHandler := objectset.NewLockableRegister("object-set-register", apply, scf, discovery, nil)
 
 	helmlocker, err := helmlocker.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
 		SharedControllerFactory: scf,
