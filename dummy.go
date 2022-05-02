@@ -17,11 +17,15 @@ import (
 )
 
 const (
+	// DummyHelmAPIVersion is the spec.helmApiVersion corresponding to the dummy example-chart
 	DummyHelmAPIVersion = "dummy.cattle.io/v1alpha1"
-	DummyReleaseName    = "dummy"
+
+	// DummyReleaseName is the release name corresponding to the operator that deploys the dummy example-chart
+	DummyReleaseName = "dummy"
 )
 
 var (
+	// DummySystemNamespaces is the system namespaces scoped for the dummy example-chart.
 	DummySystemNamespaces = []string{"kube-system"}
 
 	//go:embed bin/example-chart/example-chart.tgz.base64
