@@ -20,7 +20,7 @@ func (h *handler) initResolvers(ctx context.Context) {
 }
 
 func (h *handler) resolveProjectRegistrationNamespaceData(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
-	if !h.projectRegistrationNamespaceRegister.Has(namespace) {
+	if !h.projectRegistrationNamespaceTracker.Has(namespace) {
 		// no longer need to watch for changes to resources in this namespace since it is no longer tracked
 		// if the namespace ever becomes unorphaned, we can track it again
 		return nil, nil

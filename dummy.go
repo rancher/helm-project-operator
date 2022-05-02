@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	DummyHelmApiVersion = "dummy.cattle.io/v1alpha1"
+	DummyHelmAPIVersion = "dummy.cattle.io/v1alpha1"
 	DummyReleaseName    = "dummy"
 )
 
@@ -49,7 +49,7 @@ func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 
 	if err := operator.Init(ctx, o.Namespace, cfg, common.Options{
 		OperatorOptions: common.OperatorOptions{
-			HelmApiVersion:   DummyHelmApiVersion,
+			HelmAPIVersion:   DummyHelmAPIVersion,
 			ReleaseName:      DummyReleaseName,
 			SystemNamespaces: DummySystemNamespaces,
 			ChartContent:     base64TgzChart,

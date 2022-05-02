@@ -20,9 +20,9 @@ type ProjectHelmChart struct {
 
 // ProjectHelmChartSpec defines the spec of a ProjectHelmChart
 type ProjectHelmChartSpec struct {
-	// HelmApiVersion identifies whether a particular rendition of the Helm Project Operator
+	// HelmAPIVersion identifies whether a particular rendition of the Helm Project Operator
 	// should watch ProjectHelmChart of this type. e.g. monitoring.cattle.io/v1alpha1 is watched by Prometheus Federator
-	HelmApiVersion string `json:"helmApiVersion"`
+	HelmAPIVersion string `json:"helmApiVersion"`
 
 	// ProjectNamespaceSelector is a namespaceSelector that identifies the project this underlying chart should be targeting
 	// If a project label is provided as part of the Operator's runtime options, this field will be ignored since ProjectHelmCharts

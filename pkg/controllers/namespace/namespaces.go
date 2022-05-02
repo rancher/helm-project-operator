@@ -8,14 +8,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// initSystemNamespaces initializes all System Namespaces on the NamespaceRegister
-func (h *handler) initSystemNamespaces(systemNamespaceList []string, systemNamespaceRegister NamespaceRegister) {
+// initSystemNamespaces initializes all System Namespaces on the Tracker
+func (h *handler) initSystemNamespaces(systemNamespaceList []string, systemNamespaceTracker Tracker) {
 	for _, namespace := range systemNamespaceList {
-		systemNamespaceRegister.Set(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
+		systemNamespaceTracker.Set(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
 	}
 }
 
-// initProjectRegistrationNamespaces initializes all Project Registration Namespaces on the NamespaceRegister
+// initProjectRegistrationNamespaces initializes all Project Registration Namespaces on the Tracker
 // It also automatically triggers the creation of the Project Registration Namespaces if necessary
 func (h *handler) initProjectRegistrationNamespaces() error {
 	namespaceList, err := h.namespaces.List(metav1.ListOptions{})
@@ -32,8 +32,8 @@ func (h *handler) initProjectRegistrationNamespaces() error {
 		//
 		// Q: Why don't we use Enqueue here?
 		//
-		// Enqueue will add it to the workqueue but there's no guarentee the namespace's processing
-		// will happen before this function exits, which is what we need to guarentee here.
+		// Enqueue will add it to the workqueue but there's no guarantee the namespace's processing
+		// will happen before this function exits, which is what we need to guarantee here.
 		// As a result, we explicitly call OnChange here to force the apply to happen and wait for it to finish
 		for _, ns := range namespaceList.Items {
 			_, err := h.OnMultiNamespaceChange(ns.Name, &ns)

@@ -8,8 +8,8 @@ import (
 
 // OperatorOptions are options provided by an operator that is implementing Helm Project Operator
 type OperatorOptions struct {
-	// HelmApiVersion is the unique API version marking ProjectHelmCharts that this Helm Project Operator should watch for
-	HelmApiVersion string
+	// HelmAPIVersion is the unique API version marking ProjectHelmCharts that this Helm Project Operator should watch for
+	HelmAPIVersion string
 
 	// ReleaseName is a name that identifies releases created for this operator
 	ReleaseName string
@@ -30,7 +30,7 @@ type OperatorOptions struct {
 
 // Validate validates the provided OperatorOptions
 func (opts OperatorOptions) Validate() error {
-	if len(opts.HelmApiVersion) == 0 {
+	if len(opts.HelmAPIVersion) == 0 {
 		return errors.New("must provide a spec.helmApiVersion that this project operator is being initialized for")
 	}
 

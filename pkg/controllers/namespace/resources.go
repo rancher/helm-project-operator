@@ -44,5 +44,5 @@ func (h *handler) getConfigMap(projectID string, namespace *corev1.Namespace) *c
 
 // getConfigMap name returns the name of the ConfigMap to be deployed in all Project Registration Namespaces
 func (h *handler) getConfigMapName() string {
-	return strings.ReplaceAll(h.opts.HelmApiVersion, "/", ".")
+	return strings.ReplaceAll(h.opts.HelmAPIVersion, "/", ".")
 }

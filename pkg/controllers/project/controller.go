@@ -150,7 +150,7 @@ func (h *handler) shouldHandle(projectHelmChart *v1alpha1.ProjectHelmChart) (boo
 		// only watching resources in registered namespaces
 		return false, nil
 	}
-	if projectHelmChart.Spec.HelmApiVersion != h.opts.HelmApiVersion {
+	if projectHelmChart.Spec.HelmAPIVersion != h.opts.HelmAPIVersion {
 		// only watch resources with the HelmAPIVersion this controller was configured with
 		return false, nil
 	}

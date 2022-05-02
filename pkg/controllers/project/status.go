@@ -15,7 +15,7 @@ func (h *handler) getCleanupStatus(projectHelmChart *v1alpha1.ProjectHelmChart, 
 			"ProjectHelmChart was marked with label %s=true, which indicates that the resource should be cleaned up "+
 				"until the Project Operator that responds to ProjectHelmCharts in %s with spec.helmApiVersion=%s "+
 				"is redeployed onto the cluster. On redeployment, this label will automatically be removed by the operator.",
-			common.HelmProjectOperatedCleanupLabel, projectHelmChart.Namespace, projectHelmChart.Spec.HelmApiVersion,
+			common.HelmProjectOperatedCleanupLabel, projectHelmChart.Namespace, projectHelmChart.Spec.HelmAPIVersion,
 		),
 	}
 }

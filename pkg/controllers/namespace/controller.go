@@ -25,8 +25,8 @@ type handler struct {
 	questionsYaml   string
 	opts            common.Options
 
-	systemNamespaceRegister              NamespaceRegister
-	projectRegistrationNamespaceRegister NamespaceRegister
+	systemNamespaceTracker              Tracker
+	projectRegistrationNamespaceTracker Tracker
 
 	namespaces            corecontroller.NamespaceController
 	namespaceCache        corecontroller.NamespaceCache
@@ -51,18 +51,18 @@ func Register(
 	apply = apply.WithCacheTypes(configmaps)
 
 	h := &handler{
-		apply:                                apply,
-		systemNamespace:                      systemNamespace,
-		valuesYaml:                           valuesYaml,
-		questionsYaml:                        questionsYaml,
-		opts:                                 opts,
-		systemNamespaceRegister:              NewRegister(),
-		projectRegistrationNamespaceRegister: NewRegister(),
-		namespaces:                           namespaces,
-		namespaceCache:                       namespaceCache,
-		configmaps:                           configmaps,
-		projectHelmCharts:                    projectHelmCharts,
-		projectHelmChartCache:                projectHelmChartCache,
+		apply:                               apply,
+		systemNamespace:                     systemNamespace,
+		valuesYaml:                          valuesYaml,
+		questionsYaml:                       questionsYaml,
+		opts:                                opts,
+		systemNamespaceTracker:              NewTracker(),
+		projectRegistrationNamespaceTracker: NewTracker(),
+		namespaces:                          namespaces,
+		namespaceCache:                      namespaceCache,
+		configmaps:                          configmaps,
+		projectHelmCharts:                   projectHelmCharts,
+		projectHelmChartCache:               projectHelmChartCache,
 	}
 
 	h.apply = h.addReconcilers(h.apply, dynamic)
@@ -87,7 +87,7 @@ func Register(
 
 	namespaces.OnChange(ctx, "on-namespace-change", h.OnMultiNamespaceChange)
 
-	h.initSystemNamespaces(h.opts.SystemNamespaces, h.systemNamespaceRegister)
+	h.initSystemNamespaces(h.opts.SystemNamespaces, h.systemNamespaceTracker)
 
 	err := h.initProjectRegistrationNamespaces()
 	if err != nil {
@@ -130,7 +130,7 @@ func (h *handler) OnMultiNamespaceChange(name string, namespace *corev1.Namespac
 			return namespace, err
 		}
 		if namespace.DeletionTimestamp != nil {
-			h.projectRegistrationNamespaceRegister.Delete(namespace)
+			h.projectRegistrationNamespaceTracker.Delete(namespace)
 		}
 		return namespace, nil
 	case h.isSystemNamespace(namespace):
@@ -150,7 +150,7 @@ func (h *handler) enqueueProjectNamespaces(projectRegistrationNamespace *corev1.
 		return nil
 	}
 	// ensure that we are working with the projectRegistrationNamespace that we expect, not the one we found
-	expectedNamespace, exists := h.projectRegistrationNamespaceRegister.Get(projectRegistrationNamespace.Name)
+	expectedNamespace, exists := h.projectRegistrationNamespaceTracker.Get(projectRegistrationNamespace.Name)
 	if !exists {
 		// we no longer expect this namespace to exist, so don't enqueue any namespaces
 		return nil
@@ -236,7 +236,7 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *corev
 	if err != nil {
 		return err
 	}
-	h.projectRegistrationNamespaceRegister.Set(projectRegistrationNamespace)
+	h.projectRegistrationNamespaceTracker.Set(projectRegistrationNamespace)
 
 	// ensure that all ProjectHelmCharts are re-enqueued within this projectRegistrationNamespace
 	err = h.enqueueProjectHelmChartsForNamespace(projectRegistrationNamespace)
@@ -291,14 +291,14 @@ func (h *handler) isProjectRegistrationNamespace(namespace *corev1.Namespace) bo
 	if namespace == nil {
 		return false
 	}
-	return h.projectRegistrationNamespaceRegister.Has(namespace.Name)
+	return h.projectRegistrationNamespaceTracker.Has(namespace.Name)
 }
 
 func (h *handler) isSystemNamespace(namespace *corev1.Namespace) bool {
 	if namespace == nil {
 		return false
 	}
-	isTrackedSystemNamespace := h.systemNamespaceRegister.Has(namespace.Name)
+	isTrackedSystemNamespace := h.systemNamespaceTracker.Has(namespace.Name)
 	if isTrackedSystemNamespace {
 		return true
 	}

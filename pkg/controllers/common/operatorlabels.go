@@ -75,15 +75,15 @@ func GetProjectNamespaceAnnotations(projectID, projectLabel, clusterID string) m
 // Helm Resources (HelmCharts and HelmReleases)
 
 const (
-	// HelmProjectOperatorHelmApiVersionLabel is a label that identifies the HelmApiVersion that a HelmChart or HelmRelease is tied to
+	// HelmProjectOperatorHelmAPIVersionLabel is a label that identifies the HelmAPIVersion that a HelmChart or HelmRelease is tied to
 	// This is used to identify whether a HelmChart or HelmRelease should be deleted from the cluster on uninstall
-	HelmProjectOperatorHelmApiVersionLabel = "helm.cattle.io/helm-api-version"
+	HelmProjectOperatorHelmAPIVersionLabel = "helm.cattle.io/helm-api-version"
 )
 
 // GetHelmResourceLabels returns the labels to be added to all generated Helm resources (HelmCharts, HelmReleases)
-func GetHelmResourceLabels(projectID, helmApiVersion string) map[string]string {
+func GetHelmResourceLabels(projectID, helmAPIVersion string) map[string]string {
 	labels := GetCommonLabels(projectID)
-	labels[HelmProjectOperatorHelmApiVersionLabel] = strings.SplitN(helmApiVersion, "/", 2)[0]
+	labels[HelmProjectOperatorHelmAPIVersionLabel] = strings.SplitN(helmAPIVersion, "/", 2)[0]
 	return labels
 }
 

@@ -31,7 +31,7 @@ func (h *handler) getHelmChart(projectID string, valuesContent string, projectHe
 			ValuesContent:   valuesContent,
 		},
 	})
-	helmChart.SetLabels(common.GetHelmResourceLabels(projectID, projectHelmChart.Spec.HelmApiVersion))
+	helmChart.SetLabels(common.GetHelmResourceLabels(projectID, projectHelmChart.Spec.HelmAPIVersion))
 	return helmChart
 }
 
@@ -47,7 +47,7 @@ func (h *handler) getHelmRelease(projectID string, projectHelmChart *v1alpha1.Pr
 			},
 		},
 	})
-	helmRelease.SetLabels(common.GetHelmResourceLabels(projectID, projectHelmChart.Spec.HelmApiVersion))
+	helmRelease.SetLabels(common.GetHelmResourceLabels(projectID, projectHelmChart.Spec.HelmAPIVersion))
 	return helmRelease
 }
 

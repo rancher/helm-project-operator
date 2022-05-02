@@ -24,8 +24,8 @@ type ProjectGetter interface {
 	GetTargetProjectNamespaces(projectHelmChart *v1alpha1.ProjectHelmChart) ([]string, error)
 }
 
-// NamespaceChecker is a function that checks a namespace object and returns true or false
-type NamespaceChecker func(namespace *corev1.Namespace) bool
+// Checker is a function that checks a namespace object and returns true or false
+type Checker func(namespace *corev1.Namespace) bool
 
 // NewLabelBasedProjectGetter returns a ProjectGetter that gets target project namespaces that meet the following criteria:
 // 1) Must have the same projectLabel value as the namespace where the ProjectHelmChart lives in
@@ -33,8 +33,8 @@ type NamespaceChecker func(namespace *corev1.Namespace) bool
 // 3) Must not be a system namespace
 func NewLabelBasedProjectGetter(
 	projectLabel string,
-	isProjectRegistrationNamespace NamespaceChecker,
-	isSystemNamespace NamespaceChecker,
+	isProjectRegistrationNamespace Checker,
+	isSystemNamespace Checker,
 	namespaces corecontroller.NamespaceController,
 ) ProjectGetter {
 	return &projectGetter{
@@ -116,8 +116,8 @@ func NewSingleNamespaceProjectGetter(
 type projectGetter struct {
 	namespaces corecontroller.NamespaceController
 
-	isProjectRegistrationNamespace NamespaceChecker
-	isSystemNamespace              NamespaceChecker
+	isProjectRegistrationNamespace Checker
+	isSystemNamespace              Checker
 
 	getProjectNamespaces func(projectHelmChart *v1alpha1.ProjectHelmChart) (*corev1.NamespaceList, error)
 }
