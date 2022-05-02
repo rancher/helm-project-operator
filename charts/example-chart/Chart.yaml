@@ -1,6 +1,6 @@
 apiVersion: v2
 name: example-chart
-description: Example Project Operator chart
+description: Example Helm Project Operator chart
 version: 0.0.0
 appVersion: 0.0.0
 annotations:
