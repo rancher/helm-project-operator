@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )

@@ -3,7 +3,7 @@ package hardened
 import (
 	"context"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/wrangler/pkg/apply"
 	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	networkingcontroller "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io/v1"

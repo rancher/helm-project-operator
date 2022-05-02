@@ -3,9 +3,9 @@ package project
 import (
 	"context"
 
-	helmlockerv1alpha1 "github.com/aiyengar2/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
 	helmcontrollerv1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
+	helmlockerv1alpha1 "github.com/rancher/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/relatedresource"
 	corev1 "k8s.io/api/core/v1"

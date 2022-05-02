@@ -1,7 +1,7 @@
 package namespace
 
 import (
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	corev1 "k8s.io/api/core/v1"
 )
 

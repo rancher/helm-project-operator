@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

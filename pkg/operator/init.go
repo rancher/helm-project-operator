@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers"
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
-	"github.com/aiyengar2/helm-project-operator/pkg/crd"
+	"github.com/rancher/helm-project-operator/pkg/controllers"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
+	"github.com/rancher/helm-project-operator/pkg/crd"
 	"github.com/rancher/wrangler/pkg/ratelimit"
 	"k8s.io/client-go/tools/clientcmd"
 )

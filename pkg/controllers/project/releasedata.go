@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
+	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/wrangler/pkg/data"
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"

@@ -3,8 +3,8 @@ package project
 import (
 	"fmt"
 
-	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
+	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 )

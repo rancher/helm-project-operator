@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	helmlockercrd "github.com/aiyengar2/helm-locker/pkg/crd"
-	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	helmcontrollercrd "github.com/k3s-io/helm-controller/pkg/crd"
+	helmlockercrd "github.com/rancher/helm-locker/pkg/crd"
+	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/yaml"
 	"github.com/sirupsen/logrus"

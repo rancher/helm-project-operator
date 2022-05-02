@@ -6,9 +6,9 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
-	"github.com/aiyengar2/helm-project-operator/pkg/operator"
-	"github.com/aiyengar2/helm-project-operator/pkg/version"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
+	"github.com/rancher/helm-project-operator/pkg/operator"
+	"github.com/rancher/helm-project-operator/pkg/version"
 	command "github.com/rancher/wrangler-cli"
 	_ "github.com/rancher/wrangler/pkg/generated/controllers/apiextensions.k8s.io"
 	_ "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
-	helmprojectcontroller "github.com/aiyengar2/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
+	helmprojectcontroller "github.com/rancher/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/pkg/apply"
 	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"

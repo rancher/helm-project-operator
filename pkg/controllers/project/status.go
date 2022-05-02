@@ -3,8 +3,8 @@ package project
 import (
 	"fmt"
 
-	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
-	"github.com/aiyengar2/helm-project-operator/pkg/controllers/common"
+	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 )
 
 // getCleanupStatus returns the status on seeing the cleanup label on a ProjectHelmChart

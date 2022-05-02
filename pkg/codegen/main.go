@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	v1alpha1 "github.com/aiyengar2/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
-	"github.com/aiyengar2/helm-project-operator/pkg/crd"
+	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/crd"
 	"github.com/sirupsen/logrus"
 
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
@@ -25,7 +25,7 @@ func main() {
 
 	os.Unsetenv("GOPATH")
 	controllergen.Run(args.Options{
-		OutputPackage: "github.com/aiyengar2/helm-project-operator/pkg/generated",
+		OutputPackage: "github.com/rancher/helm-project-operator/pkg/generated",
 		Boilerplate:   "scripts/boilerplate.go.txt",
 		Groups: map[string]args.Group{
 			"helm.cattle.io": {
