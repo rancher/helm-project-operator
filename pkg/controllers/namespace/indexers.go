@@ -6,6 +6,8 @@ import (
 )
 
 const (
+	// NamespacesByProjectExcludingRegistrationID is an index mapping namespaces to project that they belong into
+	// The index will omit any namespaces considered to be the Project Registration namespace or a system namespace
 	NamespacesByProjectExcludingRegistrationID = "helm.cattle.io/namespaces-by-project-id-excluding-registration"
 )
 

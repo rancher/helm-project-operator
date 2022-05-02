@@ -22,7 +22,7 @@ const (
 	HelmProjectOperatorProjectLabel = "helm.cattle.io/projectId"
 )
 
-// HasCleanupLabel returns whether a ProjectHelmChart has the Helm Project Operated label
+// HasHelmProjectOperatedLabel returns whether a ProjectHelmChart has the Helm Project Operated label
 func HasHelmProjectOperatedLabel(labels map[string]string) bool {
 	if labels == nil {
 		return false

@@ -10,7 +10,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 )
 
-// HardenedOptions are options that can be provided to override the default hardening resources applied to all namespaces
+// HardeningOptions are options that can be provided to override the default hardening resources applied to all namespaces
 // created by this Project Operator. To disable this, specify DisableHardening in the RuntimeOptions.
 type HardeningOptions struct {
 	// ServiceAccount represents the overrides to be supplied to the default service account patched by the hardening controller

@@ -37,10 +37,7 @@ func WriteFiles(crdDirpath, crdDepDirpath string) error {
 	if err := writeFiles(crdDirpath, objs); err != nil {
 		return err
 	}
-	if err := writeFiles(crdDepDirpath, depObjs); err != nil {
-		return err
-	}
-	return nil
+	return writeFiles(crdDepDirpath, depObjs)
 }
 
 func writeFiles(dirpath string, objs []runtime.Object) error {

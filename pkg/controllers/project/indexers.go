@@ -9,18 +9,26 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
+// All namespaces
 const (
-	// All namespaces
+	// ProjectHelmChartByReleaseName identifies a ProjectHelmChart by the underlying Helm release it is tied to
 	ProjectHelmChartByReleaseName = "helm.cattle.io/project-helm-chart-by-release-name"
+)
 
-	// Registration namespaces only
+// Registration namespaces only
+const (
+	// RoleBindingInRegistrationNamespaceByRoleRef identifies the set of RoleBindings in a registration namespace
+	// that are tied to specific RoleRefs that need to be watched by the operator
 	RoleBindingInRegistrationNamespaceByRoleRef = "helm.cattle.io/role-binding-in-registration-ns-by-role-ref"
-	ClusterRoleBindingByRoleRef                 = "helm.cattle.io/cluster-role-binding-by-role-ref"
-	BindingReferencesDefaultOperatorRole        = "bound-to-default-role"
 
-	// Release namespaces only
-	RoleInReleaseNamespaceByReleaseNamespaceName      = "helm.cattle.io/role-in-release-ns-by-release-namespace-name"
-	ConfigMapInReleaseNamespaceByReleaseNamespaceName = "helm.cattle.io/configmap-in-release-ns-by-release-namespace-name"
+	// ClusterRoleBindingByRoleRef identifies the set of ClusterRoleBindings that are tied to RoleRefs that need
+	// to be watched by the operator
+	ClusterRoleBindingByRoleRef = "helm.cattle.io/cluster-role-binding-by-role-ref"
+
+	// BindingReferencesDefaultOperatorRole is the value of the both of the above indices when a ClusterRoleBinding or RoleBinding
+	// is tied to a RoleRef that matches a default ClusterRole that is watched by the operator to create admin, edit, or view RoleBindings
+	// in the Project Release Namespace
+	BindingReferencesDefaultOperatorRole = "bound-to-default-role"
 )
 
 // NamespacedBindingReferencesDefaultOperatorRole is the index used to mark a RoleBinding as one that targets
@@ -28,6 +36,19 @@ const (
 func NamespacedBindingReferencesDefaultOperatorRole(namespace string) string {
 	return fmt.Sprintf("%s/%s", namespace, BindingReferencesDefaultOperatorRole)
 }
+
+// Release namespaces only
+const (
+	// RoleInReleaseNamespaceByReleaseNamespaceName identifies a Role in a release namespace that needs to have RBAC synced
+	// on changes to RoleBindings in the Project Registration Namespace or ClusterRoleBindings.
+	// The value of this will be the namespace and name of the Helm release that it is for.
+	RoleInReleaseNamespaceByReleaseNamespaceName = "helm.cattle.io/role-in-release-ns-by-release-namespace-name"
+
+	// ConfigMapInReleaseNamespaceByReleaseNamespaceName identifies a ConfigMap in a release namespace that is tied to the
+	// ProjectHelmChart's status in the release namespace.
+	// The value of this will be the namespace and name of the Helm release that it is for.
+	ConfigMapInReleaseNamespaceByReleaseNamespaceName = "helm.cattle.io/configmap-in-release-ns-by-release-namespace-name"
+)
 
 // initIndexers initializes indexers that allow for more efficient computations on related resources without relying on additional
 // calls to be made to the Kubernetes API by referencing the cache instead

@@ -125,7 +125,7 @@ func (opts RuntimeOptions) Validate() error {
 	return nil
 }
 
-// LoadHardeningOptionsFromFile unmarshalls the struct found at the file to YAML and reads it into memory
+// LoadValuesOverrideFromFile unmarshalls the struct found at the file to YAML and reads it into memory
 func LoadValuesOverrideFromFile(path string) (v1alpha1.GenericMap, error) {
 	var valuesOverride v1alpha1.GenericMap
 	wd, err := os.Getwd()
