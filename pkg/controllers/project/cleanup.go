@@ -29,6 +29,14 @@ func (h *handler) initRemoveCleanupLabels() error {
 			continue
 		}
 		for _, projectHelmChart := range projectHelmChartList.Items {
+			shouldManage, err := h.shouldManage(&projectHelmChart)
+			if err != nil {
+				return err
+			}
+			if !shouldManage {
+				// not a valid ProjectHelmChart for this operator
+				continue
+			}
 			if projectHelmChart.Labels == nil {
 				continue
 			}
@@ -38,7 +46,7 @@ func (h *handler) initRemoveCleanupLabels() error {
 			}
 			projectHelmChartCopy := projectHelmChart.DeepCopy()
 			delete(projectHelmChartCopy.Labels, common.HelmProjectOperatedCleanupLabel)
-			_, err := h.projectHelmCharts.Update(projectHelmChartCopy)
+			_, err = h.projectHelmCharts.Update(projectHelmChartCopy)
 			if err != nil {
 				return fmt.Errorf("unable to remove cleanup label from ProjectHelmCharts %s/%s", projectHelmChart.Namespace, projectHelmChart.Name)
 			}

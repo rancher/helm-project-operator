@@ -288,7 +288,12 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 }
 
 func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmChart) (*v1alpha1.ProjectHelmChart, error) {
-	if projectHelmChart == nil {
+	// initial checks to see if we should handle this
+	shouldManage, err := h.shouldManage(projectHelmChart)
+	if err != nil {
+		return projectHelmChart, err
+	}
+	if !shouldManage {
 		return projectHelmChart, nil
 	}
 	if projectHelmChart.DeletionTimestamp == nil {

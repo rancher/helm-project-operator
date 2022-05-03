@@ -65,7 +65,11 @@ func (h *handler) initIndexers() {
 }
 
 func (h *handler) projectHelmChartToReleaseName(projectHelmChart *v1alpha1.ProjectHelmChart) ([]string, error) {
-	if projectHelmChart == nil {
+	shouldManage, err := h.shouldManage(projectHelmChart)
+	if err != nil {
+		return nil, err
+	}
+	if !shouldManage {
 		return nil, nil
 	}
 	_, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
