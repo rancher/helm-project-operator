@@ -138,7 +138,7 @@ func Register(
 	}
 }
 
-func (h *handler) shouldHandle(projectHelmChart *v1alpha1.ProjectHelmChart) (bool, error) {
+func (h *handler) shouldManage(projectHelmChart *v1alpha1.ProjectHelmChart) (bool, error) {
 	if projectHelmChart == nil {
 		return false, nil
 	}
@@ -161,11 +161,11 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	var objs []runtime.Object
 
 	// initial checks to see if we should handle this
-	shouldHandle, err := h.shouldHandle(projectHelmChart)
+	shouldManage, err := h.shouldManage(projectHelmChart)
 	if err != nil {
 		return nil, projectHelmChartStatus, err
 	}
-	if !shouldHandle {
+	if !shouldManage {
 		return nil, projectHelmChartStatus, nil
 	}
 	if projectHelmChart.DeletionTimestamp != nil {
