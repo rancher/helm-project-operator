@@ -136,6 +136,10 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.Dynamic,
 	)
 
+	if len(opts.ControllerName) == 0 {
+		opts.ControllerName = "helm-project-operator"
+	}
+
 	valuesOverride, err := common.LoadValuesOverrideFromFile(opts.ValuesOverrideFile)
 	if err != nil {
 		return err
@@ -166,6 +170,7 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 
 	release.Register(ctx,
 		systemNamespace,
+		opts.ControllerName,
 		appCtx.HelmLocker.HelmRelease(),
 		appCtx.HelmLocker.HelmRelease().Cache(),
 		appCtx.Core.Secret(),
@@ -178,6 +183,7 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 
 	chart.Register(ctx,
 		systemNamespace,
+		opts.ControllerName,
 		appCtx.K8s,
 		appCtx.Apply,
 		recorder,

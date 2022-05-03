@@ -2,7 +2,9 @@ package project
 
 import (
 	helmcontrollerv1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
+	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
 	helmlockerv1alpha1 "github.com/rancher/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-locker/pkg/controllers/release"
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	v1 "k8s.io/api/core/v1"
@@ -32,6 +34,9 @@ func (h *handler) getHelmChart(projectID string, valuesContent string, projectHe
 		},
 	})
 	helmChart.SetLabels(common.GetHelmResourceLabels(projectID, projectHelmChart.Spec.HelmAPIVersion))
+	helmChart.SetAnnotations(map[string]string{
+		chart.ManagedBy: h.opts.ControllerName,
+	})
 	return helmChart
 }
 
@@ -48,6 +53,9 @@ func (h *handler) getHelmRelease(projectID string, projectHelmChart *v1alpha1.Pr
 		},
 	})
 	helmRelease.SetLabels(common.GetHelmResourceLabels(projectID, projectHelmChart.Spec.HelmAPIVersion))
+	helmRelease.SetAnnotations(map[string]string{
+		release.ManagedBy: h.opts.ControllerName,
+	})
 	return helmRelease
 }
 

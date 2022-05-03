@@ -19,6 +19,10 @@ type RuntimeOptions struct {
 	// NodeName is the name of the node running the operator; it adds additional information to events about where they were generated from
 	NodeName string `usage:"Name of the node this controller is running on" env:"NODE_NAME"`
 
+	// ControllerName is the name of the controller that identifies this operator; this ensures that all HelmCharts and HelmReleases have the correct managed-by annotation
+	// so that multiple iterations of this operator in the same namespace do not try to manage the same HelmChart and HelmRelease objects
+	ControllerName string `usage:"Unique name to identify this controller that is added to all HelmCharts tracked by this controller" default:"helm-project-operator" env:"CONTROLLER_NAME"`
+
 	// HelmJobImage is the job image to use to run the HelmChart job (default rancher/klipper-helm:v0.7.0-build20220315)
 	// Generally, this HelmJobImage can be left undefined, but may be necessary to be set if you are running with a non-default image
 	HelmJobImage string `usage:"Job image to use to perform helm operations on HelmChart creation" env:"HELM_JOB_IMAGE"`
