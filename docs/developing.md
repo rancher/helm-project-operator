@@ -18,7 +18,7 @@ charts/
   ## The main chart that deploys Helm Project Operator in the cluster.
   ##
   ## Depends on 'helm-project-operator-crd' being deployed onto the cluster first.
-  helm-locker/
+  helm-project-operator/
   
   ## A dummy chart that is deployed onto the cluster on seeing a valid ProjectHelmChart (which means that it is contained within 
   ## a Project Registration Namespace with spec.helmApiVersion set to dummy.cattle.io/v1alpha1)
