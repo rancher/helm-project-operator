@@ -87,31 +87,19 @@ func Print(out io.Writer, depOut io.Writer) {
 	if err != nil {
 		logrus.Fatalf("%s", err)
 	}
-	objsV1Beta1, depObjsV1Beta1, err := Objects(true)
-	if err != nil {
+	if err := print(out, objs); err != nil {
 		logrus.Fatalf("%s", err)
 	}
-	if err := print(out, objs, objsV1Beta1); err != nil {
-		logrus.Fatalf("%s", err)
-	}
-	if err := print(depOut, depObjs, depObjsV1Beta1); err != nil {
+	if err := print(depOut, depObjs); err != nil {
 		logrus.Fatalf("%s", err)
 	}
 }
 
-func print(out io.Writer, objs []runtime.Object, objsV1Beta1 []runtime.Object) error {
+func print(out io.Writer, objs []runtime.Object) error {
 	data, err := yaml.Export(objs...)
 	if err != nil {
 		return err
 	}
-	dataV1Beta1, err := yaml.Export(objsV1Beta1...)
-	if err != nil {
-		return err
-	}
-	data = append([]byte("{{- if .Capabilities.APIVersions.Has \"apiextensions.k8s.io/v1\" -}}\n"), data...)
-	data = append(data, []byte("{{- else -}}\n---\n")...)
-	data = append(data, dataV1Beta1...)
-	data = append(data, []byte("{{- end -}}")...)
 	_, err = out.Write(data)
 	return err
 }

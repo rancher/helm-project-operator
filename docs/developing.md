@@ -3,21 +3,10 @@
 ## Repository Structure
 
 ```bash
-## This directory contains Helm charts that can be used to deploy Helm Project Operator in a Kubernetes cluster in the cattle-helm-system namespace,
+## This directory contains a Helm chart that can be used to deploy Helm Project Operator in a Kubernetes cluster in the cattle-helm-system namespace,
 ## which deploys example-chart (located under charts/example-chart) on seeing a ProjectHelmChart with spec.helmApiVersion: dummy.cattle.io/v1alpha1.
-##
-## By default, you should always install the Helm Project Operator CRD chart before installing the main Helm Project Operator chart.
 charts/
-  
-  ## The CRD chart that installs the HelmRelease CRD, HelmChart CRD, and ProjectHelmChart CRD. This must be installed before installing all other charts.
-  ## By default, this chart will only ever install the HelmChart CRD / the HelmRelease CRD; it will never upgrade or delete those CRDs to avoid 
-  ## unintentionally impacting other applications installed onto your cluster that use those CRDs (e.g. RKE2 clusters use the HelmChart CRD to manage
-  ## internal k8s components, so deleting that CRD would destroy an RKE2 cluster).
-  helm-project-operator-crd/
-
   ## The main chart that deploys Helm Project Operator in the cluster.
-  ##
-  ## Depends on 'helm-project-operator-crd' being deployed onto the cluster first.
   helm-project-operator/
   
   ## A dummy chart that is deployed onto the cluster on seeing a valid ProjectHelmChart (which means that it is contained within 
@@ -43,7 +32,7 @@ pkg/
 Dockerfile.dapper
 
 ## The file that contains the underlying actions that 'go generate' needs to execute on a call to it. Includes the logic for generating 
-## controllers and updating the CRD packaged into the CRD chart
+## controllers and updating the crds.yaml under the crds/ directory
 generate.go
 
 ## The main entrypoint into Helm Project Operator; this serves as an example of how Helm Project Operator can be used.
@@ -133,7 +122,7 @@ Once the image is successfully packaged, simply run `docker push ${REPO}/helm-pr
 
 ## Testing a custom Docker image build
 
-1. Deploy the Helm Project Operator CRD chart as a Helm 3 chart onto your cluster: ensure that your `KUBECONFIG` environment variable is pointing to your cluster (e.g. `export KUBECONFIG=<path-to-kubeconfig>; kubectl get nodes` should show the nodes of your cluster), pull in this repository locally, and from the root of this repository run `helm upgrade --install helm-project-operator-crd -n cattle-helm-system charts/helm-project-operator-crd`
-2. Deploy the Helm Project Operator chart as a Helm 3 chart onto your cluster after overriding the image and tag values with your Docker repository and tag: run `helm upgrade --install --set image.repository="${REPO}/helm-project-operator" --set image.tag="${TAG}" --set image.pullPolicy=Always helm-project-operator -n cattle-helm-system charts/helm-project-operator`
+1. Ensure that your `KUBECONFIG` environment variable is pointing to your cluster (e.g. `export KUBECONFIG=<path-to-kubeconfig>; kubectl get nodes` should show the nodes of your cluster) and pull in this repository locally
+2. Go to the root of your local copy of this repository and deploy the Helm Project Operator chart as a Helm 3 chart onto your cluster after overriding the image and tag values with your Docker repository and tag: run `helm upgrade --install --set image.repository="${REPO}/helm-project-operator" --set image.tag="${TAG}" --set image.pullPolicy=Always helm-project-operator -n cattle-helm-system charts/helm-project-operator`
 > Note: Why do we set the Image Pull Policy to `Always`? If you update the Docker image on your fork, setting the Image Pull Policy to `Always` ensures that running `kubectl rollout restart -n cattle-helm-system deployment/helm-project-operator` is all you need to do to update your running deployment to the new image, since this would ensure redeploying a deployment triggers a image pull that uses your most up-to-date Docker image. Also, since the underlying Helm chart deployed by the operator (e.g. `example-chart`) is directly embedded into the Helm Project Operator image, you also do not need to update the Deployment object itself to see all the HelmCharts in your cluster automatically be updated to the latest embedded version of the chart.
 3. Profit!
