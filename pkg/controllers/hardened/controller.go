@@ -52,6 +52,12 @@ func (h *handler) OnChange(name string, namespace *corev1.Namespace) (*corev1.Na
 	if namespace == nil {
 		return namespace, nil
 	}
+	if namespace.DeletionTimestamp != nil {
+		// When a namespace gets deleted, all resources deployed to harden that namespace should also get deleted
+		// Therefore, we do not need to apply anything in this situation to avoid spamming logs with trying to apply
+		// a resource to a namespace that is being terminated
+		return namespace, nil
+	}
 	if !common.HasHelmProjectOperatedLabel(namespace.Labels) {
 		// only harden operated namespaces
 		return namespace, nil

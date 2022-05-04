@@ -105,6 +105,12 @@ func (h *handler) OnSingleNamespaceChange(name string, namespace *corev1.Namespa
 		h.namespaces.Enqueue(h.systemNamespace)
 		return namespace, nil
 	}
+	if namespace.DeletionTimestamp != nil {
+		// When a namespace gets deleted, the ConfigMap deployed in that namespace should also get deleted
+		// Therefore, we do not need to apply anything in this situation to avoid spamming logs with trying to apply
+		// a resource to a namespace that is being terminated
+		return namespace, nil
+	}
 	// Trigger applying the data for this projectRegistrationNamespace
 	var objs []runtime.Object
 	objs = append(objs, h.getConfigMap("", namespace))
@@ -228,6 +234,16 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *corev
 	if err != nil {
 		return fmt.Errorf("unable to get project registration namespace from cache after create: %s", err)
 	}
+	h.projectRegistrationNamespaceTracker.Set(projectRegistrationNamespace)
+
+	if projectRegistrationNamespace.DeletionTimestamp != nil {
+		// When a namespace gets deleted, the ConfigMap deployed in that namespace and all ProjectHelmCharts should also get deleted
+		// Therefore, we do not need to apply anything in this situation to avoid spamming logs with trying to apply
+		// a resource to a namespace that is being terminated
+		//
+		// We expect this to be recalled when the project registration namespace is recreated anyways
+		return nil
+	}
 
 	// Trigger applying the data for this projectRegistrationNamespace
 	var objs []runtime.Object
@@ -236,7 +252,6 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *corev
 	if err != nil {
 		return err
 	}
-	h.projectRegistrationNamespaceTracker.Set(projectRegistrationNamespace)
 
 	// ensure that all ProjectHelmCharts are re-enqueued within this projectRegistrationNamespace
 	err = h.enqueueProjectHelmChartsForNamespace(projectRegistrationNamespace)
