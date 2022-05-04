@@ -4,7 +4,7 @@ go 1.17
 
 replace (
 	// temporary until PR gets merged
-	github.com/k3s-io/helm-controller => github.com/aiyengar2/helm-controller v0.0.0-20220503191603-36d3c6287ae6
+	github.com/k3s-io/helm-controller => github.com/aiyengar2/helm-controller v0.0.0-20220504153504-fac3aac89f74
 
 	k8s.io/api => k8s.io/api v0.22.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.22.3

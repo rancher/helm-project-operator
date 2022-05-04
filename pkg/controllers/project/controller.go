@@ -69,7 +69,10 @@ func Register(
 ) {
 
 	apply = apply.
-		WithSetID("project-helm-chart-applier").
+		// Why do we need the release name?
+		// To ensure that we don't override the set created by another instance of the Project Operator
+		// running under a different release name operating on the same project registration namespace
+		WithSetID(fmt.Sprintf("%s-project-helm-chart-applier", opts.ReleaseName)).
 		WithCacheTypes(
 			helmCharts,
 			helmReleases,
@@ -103,11 +106,20 @@ func Register(
 
 	h.initResolvers(ctx)
 
+	// Why do we need to add the managedBy string to the generatingHandlerName?
+	//
+	// By default, generating handlers use the name of the controller as the set ID for the wrangler.apply operation
+	// Therefore, if multiple iterations of the helm-controller are using the same set ID, they will try to overwrite each other's
+	// resources since each controller will detect the other's set as resources that need to be cleaned up to apply the new set
+	//
+	// To resolve this, we simply prefix the provided managedBy string to the generatingHandler controller's name only to ensure that the
+	// set ID specified will only target this particular controller
+	generatingHandlerName := fmt.Sprintf("%s-project-helm-chart-registration", opts.ControllerName)
 	helmprojectcontroller.RegisterProjectHelmChartGeneratingHandler(ctx,
 		projectHelmCharts,
 		apply,
 		"",
-		"project-helm-chart-registration",
+		generatingHandlerName,
 		h.OnChange,
 		&generic.GeneratingHandlerOptions{
 			AllowClusterScoped: true,
