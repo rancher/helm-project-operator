@@ -97,7 +97,7 @@ type RuntimeOptions struct {
 // Validate validates the provided RuntimeOptions
 func (opts RuntimeOptions) Validate() error {
 	if len(opts.ProjectLabel) > 0 {
-		logrus.Infof("Creating dedicated project registration namespaces to discover ProjectHelmCharts based on the value found for the project label %s on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, HelmProjectOperatedNamespaceOrphanedLabel)
+		logrus.Infof("Creating dedicated project registration namespaces to discover ProjectHelmCharts based on the value found for the project label '%s' on all namespaces in the cluster, excluding system namespaces; these namespaces will need to be manually cleaned up if they have the label '%s': 'true'", opts.ProjectLabel, HelmProjectOperatedNamespaceOrphanedLabel)
 		if len(opts.SystemProjectLabelValues) > 0 {
 			for _, systemProjectLabel := range opts.SystemProjectLabelValues {
 				logrus.Infof("Assuming namespaces tagged with %s=%s are also system namespaces", opts.ProjectLabel, systemProjectLabel)
@@ -105,7 +105,7 @@ func (opts RuntimeOptions) Validate() error {
 		}
 		if len(opts.ProjectReleaseLabelValue) > 0 {
 			logrus.Infof("Assuming namespaces tagged with %s=%s are also system namespaces", opts.ProjectLabel, opts.ProjectReleaseLabelValue)
-			logrus.Infof("Creating dedicated project release namespaces for ProjectHelmCharts with label '%s': '%s'; these namespaces will need to be manually cleaned up if they have the label '%s: \"true\"'", opts.ProjectLabel, opts.ProjectReleaseLabelValue, HelmProjectOperatedNamespaceOrphanedLabel)
+			logrus.Infof("Creating dedicated project release namespaces for ProjectHelmCharts with label '%s': '%s'; these namespaces will need to be manually cleaned up if they have the label '%s': 'true'", opts.ProjectLabel, opts.ProjectReleaseLabelValue, HelmProjectOperatedNamespaceOrphanedLabel)
 		}
 		if len(opts.ClusterID) > 0 {
 			logrus.Infof("Marking project registration namespaces with %s=%s:<projectID>", opts.ProjectLabel, opts.ClusterID)
