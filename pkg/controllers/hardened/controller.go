@@ -49,6 +49,9 @@ func Register(
 }
 
 func (h *handler) OnChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
+	if namespace == nil {
+		return namespace, nil
+	}
 	if !common.HasHelmProjectOperatedLabel(namespace.Labels) {
 		// only harden operated namespaces
 		return namespace, nil

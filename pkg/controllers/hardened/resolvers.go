@@ -29,6 +29,10 @@ func (h *handler) resolveHardenedProjectRegistrationNamespaceData(namespace, nam
 	if err != nil {
 		return nil, err
 	}
+	if ns == nil {
+		// namespace is probably being deleted, which means we don't need to resolve anything
+		return nil, nil
+	}
 	if !common.HasHelmProjectOperatedLabel(ns.Labels) {
 		// only care about service accounts and network policies in an operated namespace
 		return nil, nil
