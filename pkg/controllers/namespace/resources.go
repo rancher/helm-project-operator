@@ -14,7 +14,7 @@ import (
 
 // getProjectRegistrationNamespace returns the namespace created on behalf of a new Project that has been identified based on
 // unique values observed for all namespaces with the label h.opts.ProjectLabel
-func (h *handler) getProjectRegistrationNamespace(projectID string, isOrphaned bool, namespace *corev1.Namespace) *corev1.Namespace {
+func (h *handler) getProjectRegistrationNamespace(projectID string, isOrphaned bool) *corev1.Namespace {
 	if len(h.opts.ProjectLabel) == 0 {
 		return nil
 	}

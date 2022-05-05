@@ -33,6 +33,8 @@ type handler struct {
 	configmaps            corecontroller.ConfigMapController
 	projectHelmCharts     helmprojectcontroller.ProjectHelmChartController
 	projectHelmChartCache helmprojectcontroller.ProjectHelmChartCache
+
+	projectRegistrationNamespaceApplyinator Applyinator
 }
 
 func Register(
@@ -64,6 +66,11 @@ func Register(
 		projectHelmCharts:                   projectHelmCharts,
 		projectHelmChartCache:               projectHelmChartCache,
 	}
+
+	// note: this implements a workqueue that ensures that applies only happen once at a time even if a bunch of namespaces in a project
+	// are all re-enqueued at the exact same time
+	h.projectRegistrationNamespaceApplyinator = NewApplyinator("project-registration-namespace-applyinator", h.applyProjectRegistrationNamespace)
+	h.projectRegistrationNamespaceApplyinator.Run(ctx, 2)
 
 	h.apply = h.addReconcilers(h.apply, dynamic)
 
@@ -189,6 +196,30 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *corev
 		return nil
 	}
 
+	// Note: why do we use an Applyinator.Apply here instead of just directly
+	// running h.applyProjectRegistrationNamespace?
+	//
+	// If we ran the logic for applying a Project Registration Namespace here,
+	// on every time a Project Namespace was re-enqueued, that would result in projects
+	// with a lot of namespaces all trying to run the exact same apply operation
+	// at the exact same time; however, the client-go workqueue implementation
+	// (which lasso controllers use under the hood as well) allow us to add the registration
+	// namespace to the queue with certain guarentees, namely this one that we need:
+	//
+	// * Stingy: a single item will not be processed multiple times concurrently,
+	// and if an item is added multiple times before it can be processed, it
+	// will only be processed once.
+	//
+	// This ensures that the actual application of a project registration namespace
+	// will only happen once, regardless of how many enqueues, which prevents us
+	// from hammering wrangler.Apply operations and forcing wrangler.Apply to engage
+	// in rate limiting (and output noisy logs)
+	h.projectRegistrationNamespaceApplyinator.Apply(projectID)
+
+	return nil
+}
+
+func (h *handler) applyProjectRegistrationNamespace(projectID string) error {
 	// Calculate whether to add the orphaned label
 	var isOrphaned bool
 	projectNamespaces, err := h.namespaceCache.GetByIndex(NamespacesByProjectExcludingRegistrationID, projectID)
@@ -197,8 +228,8 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *corev
 	}
 	var numNamespaces int
 	for _, ns := range projectNamespaces {
-		if ns.DeletionTimestamp != nil && ns.Name == namespace.Name {
-			// ignore the namespace we are deleting, which can still be in the index
+		if ns.DeletionTimestamp != nil {
+			// ignore namespaces that are being deleted
 			continue
 		}
 		numNamespaces++
@@ -209,17 +240,11 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *corev
 	}
 
 	// get the resources and validate them
-	projectRegistrationNamespace := h.getProjectRegistrationNamespace(projectID, isOrphaned, namespace)
+	projectRegistrationNamespace := h.getProjectRegistrationNamespace(projectID, isOrphaned)
 	// ensure that the projectRegistrationNamespace created from this projectID is valid
 	if len(projectRegistrationNamespace.Name) > 63 {
 		// ensure that we don't try to create a namespace with too big of a name
 		logrus.Errorf("could not apply namespace with name %s: name is above 63 characters", projectRegistrationNamespace.Name)
-		return nil
-	}
-	if projectRegistrationNamespace.Name == namespace.Name {
-		// the only way this would happen is if h.isProjectRegistrationNamespace(namespace), which means the
-		// the project registration namespace was removed from the cluster after it was orphaned (but still in the project
-		// since it has the projectID label on it). In this case, we can safely ignore and continue
 		return nil
 	}
 
