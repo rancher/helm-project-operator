@@ -16,6 +16,7 @@ import (
 	rbaccontroller "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/sirupsen/logrus"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -264,6 +265,23 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 		err = fmt.Errorf("unable to marshall spec.values: %s", err)
 		projectHelmChartStatus = h.getValuesParseErrorStatus(projectHelmChart, projectHelmChartStatus, err)
 		return nil, projectHelmChartStatus, nil
+	}
+
+	ns, err := h.namespaceCache.Get(releaseNamespace)
+	if ns == nil || apierrors.IsNotFound(err) {
+		// The release namespace does not exist yet, create it and leave the status as UnableToCreateHelmRelease
+		//
+		// Note: since we have a resolver that watches for the project release namespace, this handler will get re-enqueued
+		//
+		// Note: the reason why we need to do this check is to ensure that deleting a project release namespace will delete
+		// and recreate the HelmChart and HelmRelease resources, which will ensure that the HelmChart gets re-installed onto
+		// the newly created namespace. Without this, a deleted release namespace will always have ProjectHelmCharts stuck in
+		// WaitingForDashboardValues since the underlying helm release will never be recreated
+		err = fmt.Errorf("cannot find release namespace %s to deploy release", releaseNamespace)
+		projectHelmChartStatus = h.getUnableToCreateHelmReleaseStatus(projectHelmChart, projectHelmChartStatus, err)
+		return objs, projectHelmChartStatus, nil
+	} else if err != nil {
+		return nil, projectHelmChartStatus, err
 	}
 
 	// get rolebindings that need to be created in release namespace
