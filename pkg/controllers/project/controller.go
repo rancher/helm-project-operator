@@ -15,6 +15,7 @@ import (
 	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	rbaccontroller "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/pkg/generic"
+	"github.com/rancher/wrangler/pkg/relatedresource"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -319,17 +320,20 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 
 func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmChart) (*v1alpha1.ProjectHelmChart, error) {
 	// initial checks to see if we should handle this
-	shouldManage, err := h.shouldManage(projectHelmChart)
-	if err != nil {
-		return projectHelmChart, err
+	if projectHelmChart != nil {
+		if projectHelmChart.Spec.HelmAPIVersion != h.opts.HelmAPIVersion {
+			// only watch resources with the HelmAPIVersion this controller was configured with
+			return nil, nil
+		}
+		if projectHelmChart.DeletionTimestamp == nil {
+			// only apply on deleted objects
+			return projectHelmChart, nil
+		}
+	} else {
+		key := relatedresource.FromString(key)
+		projectHelmChart = v1alpha1.NewProjectHelmChart(key.Namespace, key.Name, v1alpha1.ProjectHelmChart{})
 	}
-	if !shouldManage {
-		return projectHelmChart, nil
-	}
-	if projectHelmChart.DeletionTimestamp == nil {
-		// only apply on deleted objects
-		return projectHelmChart, nil
-	}
+
 	// get information about the projectHelmChart
 	projectID, err := h.getProjectID(projectHelmChart)
 	if err != nil {
