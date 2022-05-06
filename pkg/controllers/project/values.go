@@ -2,7 +2,6 @@ package project
 
 import (
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
-	"github.com/rancher/wrangler/pkg/data"
 )
 
 // getValues returns the values.yaml that should be applied for this ProjectHelmChart after processing default and required overrides
@@ -18,10 +17,10 @@ func (h *handler) getValues(projectHelmChart *v1alpha1.ProjectHelmChart, project
 	}
 
 	// overlay provided values, which will override the above values if provided
-	values = data.MergeMaps(values, projectHelmChart.Spec.Values)
+	values = MergeMaps(values, projectHelmChart.Spec.Values)
 
 	// overlay operator provided values overrides, which will override the above values even if provided
-	values = data.MergeMaps(values, h.valuesOverride)
+	values = MergeMaps(values, h.valuesOverride)
 
 	// required project-based values that must be set even if user tries to override them
 	requiredOverrides := map[string]interface{}{
@@ -36,7 +35,7 @@ func (h *handler) getValues(projectHelmChart *v1alpha1.ProjectHelmChart, project
 		},
 	}
 	// overlay required values, which will override the above values even if provided
-	values = data.MergeMaps(values, requiredOverrides)
+	values = MergeMaps(values, requiredOverrides)
 
 	return values
 }
