@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rancher/helm-project-operator/pkg/applier"
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	helmprojectcontroller "github.com/rancher/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/pkg/apply"
@@ -33,7 +34,7 @@ type handler struct {
 	projectHelmCharts     helmprojectcontroller.ProjectHelmChartController
 	projectHelmChartCache helmprojectcontroller.ProjectHelmChartCache
 
-	projectRegistrationNamespaceApplyinator Applyinator
+	projectRegistrationNamespaceApplyinator applier.Applyinator
 }
 
 func Register(
@@ -68,7 +69,7 @@ func Register(
 
 	// note: this implements a workqueue that ensures that applies only happen once at a time even if a bunch of namespaces in a project
 	// are all re-enqueued at the exact same time
-	h.projectRegistrationNamespaceApplyinator = NewApplyinator("project-registration-namespace-applyinator", h.applyProjectRegistrationNamespace)
+	h.projectRegistrationNamespaceApplyinator = applier.NewApplyinator("project-registration-namespace-applyinator", h.applyProjectRegistrationNamespace, nil)
 	h.projectRegistrationNamespaceApplyinator.Run(ctx, 2)
 
 	h.apply = h.addReconcilers(h.apply, dynamic)
