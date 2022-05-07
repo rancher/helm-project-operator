@@ -4,7 +4,7 @@ go 1.17
 
 replace (
 	// temporary until PR gets merged
-	github.com/k3s-io/helm-controller => github.com/aiyengar2/helm-controller v0.0.0-20220504153504-fac3aac89f74
+	github.com/k3s-io/helm-controller => github.com/aiyengar2/helm-controller v0.0.0-20220507022807-c1867182d515
 
 	k8s.io/api => k8s.io/api v0.22.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.22.3
@@ -15,7 +15,7 @@ replace (
 
 require (
 	github.com/k3s-io/helm-controller v0.12.0
-	github.com/rancher/helm-locker v0.0.0-20220503191037-34be7c69a715
+	github.com/rancher/helm-locker v0.0.0-20220507022833-6580d9d563bc
 	github.com/rancher/lasso v0.0.0-20220303220127-8cf5555ec03c
 	github.com/rancher/wrangler v0.8.11-0.20220217210408-3ecd23dfea3b
 	github.com/rancher/wrangler-cli v0.0.0-20211112052728-f172e9bf59af

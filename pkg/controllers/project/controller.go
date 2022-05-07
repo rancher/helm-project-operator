@@ -11,11 +11,11 @@ import (
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/helm-project-operator/pkg/controllers/namespace"
 	helmprojectcontroller "github.com/rancher/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/remove"
 	"github.com/rancher/wrangler/pkg/apply"
 	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	rbaccontroller "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/pkg/generic"
-	"github.com/rancher/wrangler/pkg/relatedresource"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -127,24 +127,19 @@ func Register(
 			AllowClusterScoped: true,
 		})
 
-	// Note: why do we create an OnChange handler for an OnRemove function?
-	//
-	// The OnRemove handler creates an objectLifecycleAdapter that adds a Kubernetes
-	// finalizer to the object in question to ensure that the handler that we run
-	// gets applied **before** the object gets deleted. However, using finalizers
-	// ends up adding the finalizers to all objects and, in this particular case,
-	// we don't care whether the action happens **pre**-delete or **post**-delete.
-	//
-	// Therefore, to avoid creating any finalizers, we simply register this OnRemove
-	// handler as an OnChange handler.
-	//
-	// Note: why can't this be handled by the GeneratingHandler?
-	// The GeneratingHandler is built to not run the handler provided if the object's
-	// deletion timestamp is zero (since the design of the GeneratingHandler assumes)
-	// that all objects are cleaned up on deleting the parent object; the concept of
-	// orphaned child objects is not part of its pattern). Therefore, we need to run
-	// our OnRemove logic as a separate handler.
-	projectHelmCharts.OnChange(ctx, "project-helm-chart-removal", h.OnRemove)
+	remove.RegisterScopedOnRemoveHandler(ctx, projectHelmCharts, "on-project-helm-chart-remove",
+		func(key string, obj runtime.Object) (bool, error) {
+			if obj == nil {
+				return false, nil
+			}
+			projectHelmChart, ok := obj.(*v1alpha1.ProjectHelmChart)
+			if !ok {
+				return false, nil
+			}
+			return h.shouldManage(projectHelmChart)
+		},
+		helmprojectcontroller.FromProjectHelmChartHandlerToHandler(h.OnRemove),
+	)
 
 	err := h.initRemoveCleanupLabels()
 	if err != nil {
@@ -319,19 +314,8 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 }
 
 func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmChart) (*v1alpha1.ProjectHelmChart, error) {
-	// initial checks to see if we should handle this
-	if projectHelmChart != nil {
-		if projectHelmChart.Spec.HelmAPIVersion != h.opts.HelmAPIVersion {
-			// only watch resources with the HelmAPIVersion this controller was configured with
-			return nil, nil
-		}
-		if projectHelmChart.DeletionTimestamp == nil {
-			// only apply on deleted objects
-			return projectHelmChart, nil
-		}
-	} else {
-		key := relatedresource.FromString(key)
-		projectHelmChart = v1alpha1.NewProjectHelmChart(key.Namespace, key.Name, v1alpha1.ProjectHelmChart{})
+	if projectHelmChart == nil {
+		return nil, nil
 	}
 
 	// get information about the projectHelmChart
