@@ -3,7 +3,6 @@ package namespace
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	helmprojectcontroller "github.com/rancher/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
@@ -178,7 +177,7 @@ func (h *handler) enqueueProjectNamespaces(projectRegistrationNamespace *corev1.
 		return err
 	}
 	for _, ns := range projectNamespaces {
-		h.namespaces.EnqueueAfter(ns.Name, time.Second)
+		h.namespaces.Enqueue(ns.Name)
 	}
 	return nil
 }
