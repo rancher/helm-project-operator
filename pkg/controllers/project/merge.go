@@ -55,11 +55,11 @@ func getMap(entry interface{}) (map[string]interface{}, bool) {
 func convertMapInterfaceInterfaceToMapStringInterface(entry map[interface{}]interface{}) (map[string]interface{}, bool) {
 	out := make(map[string]interface{}, len(entry))
 	for k, v := range entry {
-		kString, isString := k.(string)
+		key, isString := k.(string)
 		if !isString {
 			return nil, false
 		}
-		out[kString] = v
+		out[key] = v
 	}
 	return out, true
 }

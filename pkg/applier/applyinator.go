@@ -27,7 +27,7 @@ type Options struct {
 }
 
 // Applyinator is an interface that eventually ensures that a requested action, identified by some key,
-// is applied. Any object that implements Applyinator should provide the same guarentees as the
+// is applied. Any object that implements Applyinator should provide the same guarantees as the
 // k8s.io/client-go/util/workqueue implementation, namely:
 //
 // * Fair: items processed in the order in which they are added.
@@ -44,7 +44,7 @@ type Applyinator interface {
 
 // NewApplyinator allows you to register a function that applies an action based on whether a particular
 // key is enqueued via a call to Apply. It implements k8s.io/client-go/util/workqueue under the hood, which
-// allows us to ensure that the apply function is called with the following guarentees (provided by workqueues):
+// allows us to ensure that the apply function is called with the following guarantees (provided by workqueues):
 //
 // * Fair: items processed in the order in which they are added.
 // * Stingy: a single item will not be processed multiple times concurrently,

@@ -204,7 +204,7 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *corev
 	// with a lot of namespaces all trying to run the exact same apply operation
 	// at the exact same time; however, the client-go workqueue implementation
 	// (which lasso controllers use under the hood as well) allow us to add the registration
-	// namespace to the queue with certain guarentees, namely this one that we need:
+	// namespace to the queue with certain guarantees, namely this one that we need:
 	//
 	// * Stingy: a single item will not be processed multiple times concurrently,
 	// and if an item is added multiple times before it can be processed, it
