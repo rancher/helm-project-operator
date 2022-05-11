@@ -15,7 +15,7 @@ replace (
 
 require (
 	github.com/k3s-io/helm-controller v0.12.0
-	github.com/rancher/helm-locker v0.0.0-20220507034736-02c1bb82b1af
+	github.com/rancher/helm-locker v0.0.0-20220511204622-3b216418e2f4
 	github.com/rancher/lasso v0.0.0-20220303220127-8cf5555ec03c
 	github.com/rancher/wrangler v0.8.11-0.20220217210408-3ecd23dfea3b
 	github.com/rancher/wrangler-cli v0.0.0-20211112052728-f172e9bf59af
