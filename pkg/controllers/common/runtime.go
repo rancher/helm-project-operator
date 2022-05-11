@@ -92,6 +92,13 @@ type RuntimeOptions struct {
 
 	// ValuesOverrideFile is the path to the file that contains operated-provided overrides on the values.yaml that should be applied for each ProjectHelmChart
 	ValuesOverrideFile string `usage:"Path to file that contains values.yaml overrides supplied by the operator" default:"values.yaml" env:"VALUES_OVERRIDE_FILE"`
+
+	// DisableEmbeddedHelmLocker determines whether to disable embedded Helm Locker controller in favor of external Helm Locker
+	DisableEmbeddedHelmLocker bool `usage:"Whether to disable embedded Helm Locker controller in favor of external Helm Locker" env:"DISABLE_EMBEDDED_HELM_LOCKER"`
+
+	// DisableEmbeddedHelmController determines whether to disable embedded Helm Controller controller in favor of external Helm Controller
+	// This should be the default in most RKE2 clusters since the RKE2 server binary already embeds a Helm Controller instance that manages HelmCharts
+	DisableEmbeddedHelmController bool `usage:"Whether to disable embedded Helm Controller controller in favor of external Helm Controller (recommended for RKE2 clusters)" env:"DISABLE_EMBEDDED_HELM_CONTROLLER"`
 }
 
 // Validate validates the provided RuntimeOptions

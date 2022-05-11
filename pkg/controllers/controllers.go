@@ -168,34 +168,40 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		projectGetter,
 	)
 
-	release.Register(ctx,
-		systemNamespace,
-		opts.ControllerName,
-		appCtx.HelmLocker.HelmRelease(),
-		appCtx.HelmLocker.HelmRelease().Cache(),
-		appCtx.Core.Secret(),
-		appCtx.Core.Secret().Cache(),
-		appCtx.K8s,
-		appCtx.ObjectSetRegister,
-		appCtx.ObjectSetHandler,
-		recorder,
-	)
+	if !opts.DisableEmbeddedHelmLocker {
+		logrus.Infof("Registering embedded Helm Locker...")
+		release.Register(ctx,
+			systemNamespace,
+			opts.ControllerName,
+			appCtx.HelmLocker.HelmRelease(),
+			appCtx.HelmLocker.HelmRelease().Cache(),
+			appCtx.Core.Secret(),
+			appCtx.Core.Secret().Cache(),
+			appCtx.K8s,
+			appCtx.ObjectSetRegister,
+			appCtx.ObjectSetHandler,
+			recorder,
+		)
+	}
 
-	chart.Register(ctx,
-		systemNamespace,
-		opts.ControllerName,
-		appCtx.K8s,
-		appCtx.Apply,
-		recorder,
-		appCtx.HelmController.HelmChart(),
-		appCtx.HelmController.HelmChart().Cache(),
-		appCtx.HelmController.HelmChartConfig(),
-		appCtx.HelmController.HelmChartConfig().Cache(),
-		appCtx.Batch.Job(),
-		appCtx.Batch.Job().Cache(),
-		appCtx.RBAC.ClusterRoleBinding(),
-		appCtx.Core.ServiceAccount(),
-		appCtx.Core.ConfigMap())
+	if !opts.DisableEmbeddedHelmController {
+		logrus.Infof("Registering embedded Helm Controller...")
+		chart.Register(ctx,
+			systemNamespace,
+			opts.ControllerName,
+			appCtx.K8s,
+			appCtx.Apply,
+			recorder,
+			appCtx.HelmController.HelmChart(),
+			appCtx.HelmController.HelmChart().Cache(),
+			appCtx.HelmController.HelmChartConfig(),
+			appCtx.HelmController.HelmChartConfig().Cache(),
+			appCtx.Batch.Job(),
+			appCtx.Batch.Job().Cache(),
+			appCtx.RBAC.ClusterRoleBinding(),
+			appCtx.Core.ServiceAccount(),
+			appCtx.Core.ConfigMap())
+	}
 
 	leader.RunOrDie(ctx, systemNamespace, fmt.Sprintf("helm-project-operator-%s-lock", opts.ReleaseName), appCtx.K8s, func(ctx context.Context) {
 		if err := appCtx.start(ctx); err != nil {
