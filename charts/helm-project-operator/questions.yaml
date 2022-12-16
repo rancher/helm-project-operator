@@ -1,7 +1,7 @@
 questions:
 - variable: helmController.enabled
   label: Enable Embedded Helm Controller
-  description: 'Note: If you are running Prometheus Federator in an RKE2 cluster, this should be disabled.'
+  description: 'Note: If you are running this chart in an RKE2 cluster, this should be disabled.'
   type: boolean
   group: Helm Controller
 - variable: helmLocker.enabled
