@@ -1,4 +1,4 @@
-FROM registry.suse.com/bci/bci-micro:15.3
+FROM registry.suse.com/bci/bci-micro:15.4
 RUN echo 'helmprojectoperator:x:1000:1000::/home/helmprojectoperator:/bin/bash' >> /etc/passwd && \
     echo 'helmprojectoperator:x:1000:' >> /etc/group && \
     mkdir /home/helmprojectoperator && \
