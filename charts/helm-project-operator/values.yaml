@@ -167,9 +167,19 @@ resources: {}
   #   memory: 100Mi
   #   cpu: 100m
 
-securityContext: {}
+containerSecurityContext: {}
   # allowPrivilegeEscalation: false
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # privileged: false
   # readOnlyRootFilesystem: true
+
+securityContext: {}
+  # runAsGroup: 1000
+  # runAsUser: 1000
+  # supplementalGroups:
+  # - 1000
 
 debug: false
 debugLevel: 0
@@ -178,6 +188,29 @@ cleanup:
   image:
     repository: rancher/shell
     tag: v0.1.19-rc7
+    imagePullPolicy: IfNotPresent
+
+  resources: {}
+    # limits:
+    #   memory: 500Mi
+    #   cpu: 1000m
+    # requests:
+    #   memory: 100Mi
+    #   cpu: 100m
+
+  containerSecurityContext: {}
+    # allowPrivilegeEscalation: false
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # privileged: false
+    # readOnlyRootFilesystem: true
+
+  securityContext: {}
+    # runAsGroup: 1000
+    # runAsUser: 1000
+    # supplementalGroups:
+    # - 1000
 
   nodeSelector: {}
 
