@@ -16,9 +16,9 @@ spec:
         app: {{ template "helm-project-operator.name" . }}
     spec:
       serviceAccountName: {{ template "helm-project-operator.name" . }}
-      securityContext:
-        runAsNonRoot: false
-        runAsUser: 0
+{{- if .Values.cleanup.securityContext }}
+      securityContext: {{ toYaml .Values.cleanup.securityContext | nindent 8 }}
+{{- end }}
       initContainers:
         - name: add-cleanup-annotations
           image: {{ template "system_default_registry" . }}{{ .Values.cleanup.image.repository }}:{{ .Values.cleanup.image.tag }}

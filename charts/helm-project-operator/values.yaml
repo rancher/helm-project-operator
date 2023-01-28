@@ -194,3 +194,7 @@ cleanup:
   #   operator: "Equal"
   #   value: "value"
   #   effect: "NoSchedule"
+
+  securityContext:
+    runAsNonRoot: false
+    runAsUser: 0
