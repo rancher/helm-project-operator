@@ -179,6 +179,7 @@ cleanup:
   image:
     repository: rancher/shell
     tag: v0.1.19-rc8
+    pullPolicy: IfNotPresent
 
   ## Define which Nodes the Pods are scheduled on.
   ## ref: https://kubernetes.io/docs/user-guide/node-selection/
