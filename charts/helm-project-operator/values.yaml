@@ -7,6 +7,8 @@
 global:
   cattle:
     clusterId: ""
+    psp:
+      enabled: false
     projectLabel: field.cattle.io/projectId
     systemDefaultRegistry: ""
     systemProjectId: ""
@@ -22,7 +24,6 @@ global:
       ## Aggregate default user ClusterRoles into default k8s ClusterRoles
       aggregateToDefaultRoles: true
 
-    pspEnabled: true
     pspAnnotations: {}
       ## Specify pod annotations
       ## Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#apparmor
@@ -127,7 +128,7 @@ namespaceOverride: ""
 
 image:
   repository: rancher/helm-project-operator
-  tag: v0.0.3
+  tag: v0.1.0
   pullPolicy: IfNotPresent
 
 helmController:
