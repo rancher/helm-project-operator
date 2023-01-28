@@ -198,3 +198,11 @@ cleanup:
   securityContext:
     runAsNonRoot: false
     runAsUser: 0
+
+  resources: {}
+    # limits:
+    #   memory: 500Mi
+    #   cpu: 1000m
+    # requests:
+    #   memory: 100Mi
+    #   cpu: 100m
