@@ -3,9 +3,6 @@ module github.com/rancher/helm-project-operator
 go 1.17
 
 replace (
-	// temporary until PR gets merged
-	github.com/k3s-io/helm-controller => github.com/aiyengar2/helm-controller v0.0.0-20220507022807-c1867182d515
-
 	k8s.io/api => k8s.io/api v0.22.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.22.3
 	k8s.io/apimachinery => k8s.io/apimachinery v0.22.3
@@ -14,7 +11,7 @@ replace (
 )
 
 require (
-	github.com/k3s-io/helm-controller v0.12.0
+	github.com/k3s-io/helm-controller v0.13.1
 	github.com/rancher/helm-locker v0.0.0-20220511204622-3b216418e2f4
 	github.com/rancher/lasso v0.0.0-20220303220127-8cf5555ec03c
 	github.com/rancher/wrangler v0.8.11-0.20220217210408-3ecd23dfea3b
