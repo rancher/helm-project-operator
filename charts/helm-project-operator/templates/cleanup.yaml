@@ -45,6 +45,9 @@ spec:
 {{- if .Values.cleanup.resources }}
           resources: {{ toYaml .Values.cleanup.resources | nindent 12 }}
 {{- end }}
+{{- if .Values.cleanup.containerSecurityContext }}
+          securityContext: {{ toYaml .Values.cleanup.containerSecurityContext | nindent 12 }}
+{{- end }}
       containers:
         - name: ensure-subresources-deleted
           image: {{ template "system_default_registry" . }}{{ .Values.cleanup.image.repository }}:{{ .Values.cleanup.image.tag }}
@@ -64,6 +67,9 @@ spec:
             echo "Successfully deleted all HelmCharts and HelmReleases in ${SYSTEM_NAMESPACE}!";
 {{- if .Values.cleanup.resources }}
           resources: {{ toYaml .Values.cleanup.resources | nindent 12 }}
+{{- end }}
+{{- if .Values.cleanup.containerSecurityContext }}
+          securityContext: {{ toYaml .Values.cleanup.containerSecurityContext | nindent 12 }}
 {{- end }}
       restartPolicy: OnFailure
       nodeSelector: {{ include "linux-node-selector" . | nindent 8 }}
