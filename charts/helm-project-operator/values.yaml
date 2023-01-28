@@ -180,6 +180,16 @@ cleanup:
     repository: rancher/shell
     tag: v0.1.19-rc8
 
+  ## Define which Nodes the Pods are scheduled on.
+  ## ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
   nodeSelector: {}
 
+  ## Tolerations for use with node taints
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
   tolerations: []
+  # - key: "key"
+  #   operator: "Equal"
+  #   value: "value"
+  #   effect: "NoSchedule"
