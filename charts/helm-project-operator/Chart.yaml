@@ -1,8 +1,8 @@
 apiVersion: v2
 name: helm-project-operator
 description: Helm Project Operator
-version: 0.0.3
-appVersion: 0.0.1
+version: 0.1.0
+appVersion: 0.1.0
 annotations:
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/display-name: Helm Project Operator
@@ -10,6 +10,6 @@ annotations:
   catalog.cattle.io/namespace: cattle-helm-system
   catalog.cattle.io/permits-os: linux,windows
   catalog.cattle.io/provides-gvr: helm.cattle.io.projecthelmchart/v1alpha1
-  catalog.cattle.io/rancher-version: '>= 2.6.0-0 <=2.6.99-0'
+  catalog.cattle.io/rancher-version: '>= 2.6.0-0'
   catalog.cattle.io/release-name: helm-project-operator
   catalog.cattle.io/os: linux,windows

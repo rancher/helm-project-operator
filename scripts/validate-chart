@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+cd $(dirname $0)/..
+
+app_version=$(yq e '.appVersion' charts/helm-project-operator/Chart.yaml)
+image_tag=$(yq e '.image.tag' charts/helm-project-operator/values.yaml)
+
+if [[ "${image_tag}" != "v${app_version}" ]]; then
+    echo "ERROR: .image.tag in charts/helm-project-operator/values.yaml (found: ${image_tag}) must match appVersion in charts/helm-project-operator/Chart.yaml (found ${app_version})"
+    exit 1
+fi
