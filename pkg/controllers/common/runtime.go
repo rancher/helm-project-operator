@@ -1,7 +1,6 @@
 package common
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -152,7 +151,7 @@ func LoadValuesOverrideFromFile(path string) (v1alpha1.GenericMap, error) {
 		}
 		return nil, err
 	}
-	valuesOverrideBytes, err := ioutil.ReadFile(abspath)
+	valuesOverrideBytes, err := os.ReadFile(abspath)
 	if err != nil {
 		return nil, err
 	}

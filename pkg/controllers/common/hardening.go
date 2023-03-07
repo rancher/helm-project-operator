@@ -1,7 +1,6 @@
 package common
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -46,7 +45,7 @@ func LoadHardeningOptionsFromFile(path string) (HardeningOptions, error) {
 		}
 		return HardeningOptions{}, err
 	}
-	hardeningOptionsBytes, err := ioutil.ReadFile(abspath)
+	hardeningOptionsBytes, err := os.ReadFile(abspath)
 	if err != nil {
 		return hardeningOptions, err
 	}
