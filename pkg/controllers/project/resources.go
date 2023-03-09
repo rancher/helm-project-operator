@@ -77,7 +77,9 @@ func (h *handler) getProjectReleaseNamespace(projectID string, isOrphaned bool, 
 
 // getRoleBindings returns the RoleBindings created on behalf of this ProjectHelmChart in the Project Release Namespace based on Roles created in the
 // Project Release Namespace and RoleBindings attached to the default operator roles (configured as AdminClusterRole, EditClusterRole, and ViewClusterRole
-//  in the providedRuntimeOptions) in the Project Registration Namespace only. To update these RoleBindings in the release namespace, you will need to assign
+//
+//	in the providedRuntimeOptions) in the Project Registration Namespace only. To update these RoleBindings in the release namespace, you will need to assign
+//
 // additional permissions to the default roles in the Project Registration Namespace or manually assign RoleBindings in the release namespace.
 func (h *handler) getRoleBindings(projectID string, k8sRoleToRoleRefs map[string][]rbacv1.RoleRef, k8sRoleToSubjects map[string][]rbacv1.Subject, projectHelmChart *v1alpha1.ProjectHelmChart) []runtime.Object {
 	var objs []runtime.Object

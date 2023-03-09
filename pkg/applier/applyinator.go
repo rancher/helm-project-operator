@@ -36,7 +36,6 @@ type Options struct {
 // will only be processed once.
 // * Multiple consumers and producers. In particular, it is allowed for an
 // item to be reenqueued while it is being processed.
-//
 type Applyinator interface {
 	Apply(key string)
 	Run(ctx context.Context, workers int)
@@ -52,7 +51,6 @@ type Applyinator interface {
 // will only be processed once.
 // * Multiple consumers and producers. In particular, it is allowed for an
 // item to be reenqueued while it is being processed.
-//
 func NewApplyinator(name string, applyFunc ApplyFunc, opts *Options) Applyinator {
 	opts = applyDefaultOptions(opts)
 	return &applyinator{
