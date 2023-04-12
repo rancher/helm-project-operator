@@ -7,6 +7,7 @@ import (
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -47,6 +48,11 @@ func NewLabelBasedProjectGetter(
 			// source of truth is the projectLabel pair that exists on the namespace that the ProjectHelmChart lives within
 			namespace, err := namespaces.Get(projectHelmChart.Namespace, metav1.GetOptions{})
 			if err != nil {
+				if apierrors.IsNotFound(err) {
+					// The projectHelmChart is not in a namespace that exists anymore, this implies it may have been deleted
+					// Therefore, there are no project namespaces associated with this ProjectHelmChart
+					return nil, nil
+				}
 				return nil, err
 			}
 			projectLabelValue, ok := namespace.Labels[projectLabel]
@@ -126,6 +132,10 @@ type projectGetter struct {
 func (g *projectGetter) IsProjectRegistrationNamespace(namespace string) (bool, error) {
 	namespaceObj, err := g.namespaces.Get(namespace, metav1.GetOptions{})
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// A non-existent namespace is not a project registration namespace
+			return false, nil
+		}
 		return false, err
 	}
 	return g.isProjectRegistrationNamespace(namespaceObj), nil
@@ -135,6 +145,10 @@ func (g *projectGetter) IsProjectRegistrationNamespace(namespace string) (bool, 
 func (g *projectGetter) IsSystemNamespace(namespace string) (bool, error) {
 	namespaceObj, err := g.namespaces.Get(namespace, metav1.GetOptions{})
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// A non-existent namespace is not a system namespace
+			return false, nil
+		}
 		return false, err
 	}
 	return g.isSystemNamespace(namespaceObj), nil
