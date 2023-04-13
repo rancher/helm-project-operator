@@ -29,10 +29,7 @@ func (h *handler) initRemoveCleanupLabels() error {
 			continue
 		}
 		for _, projectHelmChart := range projectHelmChartList.Items {
-			shouldManage, err := h.shouldManage(&projectHelmChart)
-			if err != nil {
-				return err
-			}
+			shouldManage := h.shouldManage(&projectHelmChart)
 			if !shouldManage {
 				// not a valid ProjectHelmChart for this operator
 				continue

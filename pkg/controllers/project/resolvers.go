@@ -95,10 +95,11 @@ func (h *handler) resolveProjectRegistrationNamespaceData(namespace, name string
 }
 
 func (h *handler) resolveProjectRegistrationNamespaceRoleBinding(namespace, name string, rb *rbacv1.RoleBinding) ([]relatedresource.Key, error) {
-	isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(namespace)
+	namespaceObj, err := h.namespaceCache.Get(namespace)
 	if err != nil {
 		return nil, err
 	}
+	isProjectRegistrationNamespace := h.projectGetter.IsProjectRegistrationNamespace(namespaceObj)
 	if !isProjectRegistrationNamespace {
 		return nil, nil
 	}
@@ -141,10 +142,7 @@ func (h *handler) resolveClusterRoleBinding(namespace, name string, crb *rbacv1.
 		if namespace == nil {
 			continue
 		}
-		isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(namespace.Name)
-		if err != nil {
-			return nil, err
-		}
+		isProjectRegistrationNamespace := h.projectGetter.IsProjectRegistrationNamespace(namespace)
 		if !isProjectRegistrationNamespace {
 			continue
 		}
