@@ -65,10 +65,7 @@ func (h *handler) initIndexers() {
 }
 
 func (h *handler) projectHelmChartToReleaseName(projectHelmChart *v1alpha1.ProjectHelmChart) ([]string, error) {
-	shouldManage, err := h.shouldManage(projectHelmChart)
-	if err != nil {
-		return nil, err
-	}
+	shouldManage := h.shouldManage(projectHelmChart)
 	if !shouldManage {
 		return nil, nil
 	}
@@ -80,10 +77,16 @@ func (h *handler) roleBindingInRegistrationNamespaceToRoleRef(rb *rbacv1.RoleBin
 	if rb == nil {
 		return nil, nil
 	}
-	isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(rb.Namespace)
+	namespace, err := h.namespaceCache.Get(rb.Namespace)
 	if err != nil {
-		return nil, err
+		// If we can't get the namespace the rolebinding resides in role binding resides in does not exist, we don't need to index
+		// it since it's probably gotten deleted anyways.
+		//
+		// Note: we know that this error would only happen if the namespace is not found since the only valid error returned from this
+		// call is errors.NewNotFound(c.resource, name)
+		return nil, nil
 	}
+	isProjectRegistrationNamespace := h.projectGetter.IsProjectRegistrationNamespace(namespace)
 	if !isProjectRegistrationNamespace {
 		return nil, nil
 	}

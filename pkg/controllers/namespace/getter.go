@@ -15,10 +15,10 @@ import (
 // ProjectGetter allows you to get target namespaces based on a project and identify namespaces as special namespaces in a project
 type ProjectGetter interface {
 	// IsProjectRegistrationNamespace returns whether to watch for ProjectHelmCharts in the provided namespace
-	IsProjectRegistrationNamespace(namespace string) (bool, error)
+	IsProjectRegistrationNamespace(namespace *corev1.Namespace) bool
 
 	// IsSystemNamespace returns whether the provided namespace is considered a system namespace
-	IsSystemNamespace(namespace string) (bool, error)
+	IsSystemNamespace(namespace *corev1.Namespace) bool
 
 	// GetTargetProjectNamespaces returns the list of namespaces that should be targeted for a given ProjectHelmChart
 	// Any namespace returned by this should not be a project registration namespace or a system namespace
@@ -129,29 +129,13 @@ type projectGetter struct {
 }
 
 // IsProjectRegistrationNamespace returns whether to watch for ProjectHelmCharts in the provided namespace
-func (g *projectGetter) IsProjectRegistrationNamespace(namespace string) (bool, error) {
-	namespaceObj, err := g.namespaces.Get(namespace, metav1.GetOptions{})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			// A non-existent namespace is not a project registration namespace
-			return false, nil
-		}
-		return false, err
-	}
-	return g.isProjectRegistrationNamespace(namespaceObj), nil
+func (g *projectGetter) IsProjectRegistrationNamespace(namespace *corev1.Namespace) bool {
+	return g.isProjectRegistrationNamespace(namespace)
 }
 
 // IsSystemNamespace returns whether the provided namespace is considered a system namespace
-func (g *projectGetter) IsSystemNamespace(namespace string) (bool, error) {
-	namespaceObj, err := g.namespaces.Get(namespace, metav1.GetOptions{})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			// A non-existent namespace is not a system namespace
-			return false, nil
-		}
-		return false, err
-	}
-	return g.isSystemNamespace(namespaceObj), nil
+func (g *projectGetter) IsSystemNamespace(namespace *corev1.Namespace) bool {
+	return g.isSystemNamespace(namespace)
 }
 
 // GetTargetProjectNamespaces returns the list of namespaces that should be targeted for a given ProjectHelmChart

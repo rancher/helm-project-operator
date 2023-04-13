@@ -136,7 +136,7 @@ func Register(
 			if !ok {
 				return false, nil
 			}
-			return h.shouldManage(projectHelmChart)
+			return h.shouldManage(projectHelmChart), nil
 		},
 		helmprojectcontroller.FromProjectHelmChartHandlerToHandler(h.OnRemove),
 	)
@@ -147,33 +147,35 @@ func Register(
 	}
 }
 
-func (h *handler) shouldManage(projectHelmChart *v1alpha1.ProjectHelmChart) (bool, error) {
+func (h *handler) shouldManage(projectHelmChart *v1alpha1.ProjectHelmChart) bool {
 	if projectHelmChart == nil {
-		return false, nil
+		return false
 	}
-	isProjectRegistrationNamespace, err := h.projectGetter.IsProjectRegistrationNamespace(projectHelmChart.Namespace)
+	namespace, err := h.namespaceCache.Get(projectHelmChart.Namespace)
 	if err != nil {
-		return false, err
+		// If the namespace that the projectHelmChart resides in does not exist, it shouldn't be managed
+		//
+		// Note: we know that this error would only happen if the namespace is not found since the only valid error returned from this
+		// call is errors.NewNotFound(c.resource, name)
+		return false
 	}
+	isProjectRegistrationNamespace := h.projectGetter.IsProjectRegistrationNamespace(namespace)
 	if !isProjectRegistrationNamespace {
 		// only watching resources in registered namespaces
-		return false, nil
+		return false
 	}
 	if projectHelmChart.Spec.HelmAPIVersion != h.opts.HelmAPIVersion {
 		// only watch resources with the HelmAPIVersion this controller was configured with
-		return false, nil
+		return false
 	}
-	return true, nil
+	return true
 }
 
 func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) ([]runtime.Object, v1alpha1.ProjectHelmChartStatus, error) {
 	var objs []runtime.Object
 
 	// initial checks to see if we should handle this
-	shouldManage, err := h.shouldManage(projectHelmChart)
-	if err != nil {
-		return nil, projectHelmChartStatus, err
-	}
+	shouldManage := h.shouldManage(projectHelmChart)
 	if !shouldManage {
 		return nil, projectHelmChartStatus, nil
 	}
