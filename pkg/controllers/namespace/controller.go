@@ -109,6 +109,8 @@ func Register(
 func (h *handler) OnSingleNamespaceChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	if namespace.Name != h.systemNamespace {
 		// enqueue system namespace to ensure that rolebindings are updated
+
+		logrus.Debugf("Enqueue system namespace to ensure that rolebindings are updated in OnSingleNamespaceChange: %s", h.systemNamespace)
 		h.namespaces.Enqueue(h.systemNamespace)
 		return namespace, nil
 	}
@@ -116,6 +118,7 @@ func (h *handler) OnSingleNamespaceChange(name string, namespace *corev1.Namespa
 		// When a namespace gets deleted, the ConfigMap deployed in that namespace should also get deleted
 		// Therefore, we do not need to apply anything in this situation to avoid spamming logs with trying to apply
 		// a resource to a namespace that is being terminated
+		logrus.Debugf("OnSingleNamespaceChange %s has deletion timestamp of %v", namespace, namespace.DeletionTimestamp)
 		return namespace, nil
 	}
 	// Trigger applying the data for this projectRegistrationNamespace
@@ -128,6 +131,7 @@ func (h *handler) OnSingleNamespaceChange(name string, namespace *corev1.Namespa
 
 func (h *handler) OnMultiNamespaceChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	if namespace == nil {
+		logrus.Debugf("OnMultiNamespaceChange() called with no namespace.")
 		return namespace, nil
 	}
 
@@ -140,18 +144,22 @@ func (h *handler) OnMultiNamespaceChange(name string, namespace *corev1.Namespac
 	case h.isProjectRegistrationNamespace(namespace):
 		err := h.enqueueProjectNamespaces(namespace)
 		if err != nil {
+			logrus.Debugf("Error in call to isProjectRegistrationNamespace() while enqueuing project namespace %s: %s", namespace, err)
 			return namespace, err
 		}
 		if namespace.DeletionTimestamp != nil {
+			logrus.Debugf("%s has deletion timestamp %v in isProjectRegistrationNamespace()", namespace, namespace.DeletionTimestamp)
 			h.projectRegistrationNamespaceTracker.Delete(namespace)
 		}
 		return namespace, nil
 	case h.isSystemNamespace(namespace):
 		// nothing to do, we always ignore system namespaces
+		logrus.Debugf("Ignoring system namespace: %s", namespace)
 		return namespace, nil
 	default:
 		err := h.applyProjectRegistrationNamespaceForNamespace(namespace)
 		if err != nil {
+			logrus.Debugf("Default error in isProjectRegistrationNamespace() %s: %s", namespace, err)
 			return namespace, err
 		}
 		return namespace, nil
@@ -180,6 +188,7 @@ func (h *handler) enqueueProjectNamespaces(projectRegistrationNamespace *corev1.
 	for _, ns := range projectNamespaces {
 		h.namespaces.Enqueue(ns.Name)
 	}
+	logrus.Debugf("ProjectRegistrationNamespace %s was modified or removed in call to enqueueProjectNamespaces(). Reenqueiing any namepsaced tied to it.", projectRegistrationNamespace.Name)
 	return nil
 }
 
@@ -190,12 +199,14 @@ func (h *handler) applyProjectRegistrationNamespaceForNamespace(namespace *corev
 	// update the namespace with the appropriate label on it
 	err := h.updateNamespaceWithHelmOperatorProjectLabel(namespace, projectID, inProject)
 	if err != nil {
+		logrus.Debugf("Error updating namespace %s with %s labels", namespace, projectID)
 		return nil
 	}
 	if !inProject {
 		return nil
 	}
 
+	logrus.Infof("Calling projectRegistrationNamespaceApplyinator for project %s", projectID)
 	// Note: why do we use an Applyinator.Apply here instead of just directly
 	// running h.applyProjectRegistrationNamespace?
 	//

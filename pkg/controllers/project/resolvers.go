@@ -8,6 +8,7 @@ import (
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/relatedresource"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -82,10 +83,13 @@ func (h *handler) resolveSystemNamespaceData(namespace, name string, obj runtime
 // Project Registration Namespace Data
 
 func (h *handler) resolveProjectRegistrationNamespaceData(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+	//h.projectHelmCharts, h.rolebindings, h.clusterrolebindings
+
 	if obj == nil {
 		return nil, nil
 	}
 	if rb, ok := obj.(*rbacv1.RoleBinding); ok {
+		logrus.Debugf("Resolving project registration namespace rolebindings for %s", namespace)
 		return h.resolveProjectRegistrationNamespaceRoleBinding(namespace, name, rb)
 	}
 	if crb, ok := obj.(*rbacv1.ClusterRoleBinding); ok {
@@ -97,12 +101,15 @@ func (h *handler) resolveProjectRegistrationNamespaceData(namespace, name string
 func (h *handler) resolveProjectRegistrationNamespaceRoleBinding(namespace, name string, rb *rbacv1.RoleBinding) ([]relatedresource.Key, error) {
 	namespaceObj, err := h.namespaceCache.Get(namespace)
 	if err != nil {
+		logrus.Debugf("Namespace not found %s: ", namespace)
 		return nil, err
 	}
 	isProjectRegistrationNamespace := h.projectGetter.IsProjectRegistrationNamespace(namespaceObj)
 	if !isProjectRegistrationNamespace {
+		logrus.Debugf("%s is not a project registration namespace: ", namespace)
 		return nil, nil
 	}
+
 	// we want to re-enqueue the ProjectHelmChart if the rolebinding's ref points to one of the operator default roles
 	_, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, rb.RoleRef.Name)
 	if !isDefaultRoleRef {
@@ -111,6 +118,7 @@ func (h *handler) resolveProjectRegistrationNamespaceRoleBinding(namespace, name
 	// re-enqueue all HelmCharts in this project registration namespace
 	projectHelmCharts, err := h.projectHelmChartCache.List(namespace, labels.Everything())
 	if err != nil {
+		logrus.Debugf("Error in resolveProjectRegistrationNamespaceRoleBinding while re-enqueuing HelmCharts in %s", namespace)
 		return nil, err
 	}
 	var keys []relatedresource.Key
@@ -148,6 +156,7 @@ func (h *handler) resolveClusterRoleBinding(namespace, name string, crb *rbacv1.
 		}
 		projectHelmCharts, err := h.projectHelmChartCache.List(namespace.Name, labels.Everything())
 		if err != nil {
+			logrus.Debugf("Error in resolveClusterRoleBinding while re-enqueuing HelmCharts in %s", namespace)
 			return nil, err
 		}
 		for _, projectHelmChart := range projectHelmCharts {

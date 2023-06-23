@@ -5,6 +5,7 @@ import (
 
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
+	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
@@ -36,6 +37,7 @@ func (h *handler) getSubjectRoleToSubjectsFromBindings(projectHelmChart *v1alpha
 		}
 		subjectRole, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, rb.RoleRef.Name)
 		if !isDefaultRoleRef {
+			logrus.Debugf("Role %s is not a default role for %s", subjectRole, projectHelmChart.Namespace)
 			continue
 		}
 		filteredSubjects := common.FilterToUsersAndGroups(rb.Subjects)
