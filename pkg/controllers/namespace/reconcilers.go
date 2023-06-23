@@ -5,6 +5,7 @@ import (
 
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/unstructured"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +23,8 @@ func (h *handler) addReconcilers(apply apply.Apply, dynamic dynamic.Interface) a
 		NamespaceableResourceInterface: dynamic.Resource(corev1.SchemeGroupVersion.WithResource("configmaps")),
 	}
 	apply = apply.WithReconciler(corev1.SchemeGroupVersion.WithKind("ConfigMap"), r.deleteAndReplace)
+
+	logrus.Infof("Adding reconcilers on the apply object %s", apply)
 	return apply
 }
 
