@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+// TODO
 var (
 	defaultRateLimiter = workqueue.NewMaxOfRateLimiter(
 		workqueue.NewItemFastSlowRateLimiter(time.Millisecond, 2*time.Minute, 30),
@@ -66,6 +67,7 @@ func applyDefaultOptions(opts *Options) *Options {
 	}
 	if newOpts.RateLimiter == nil {
 		newOpts.RateLimiter = defaultRateLimiter
+		logrus.Debug("No rate limiter supplied, using default rate limiter.")
 	}
 	return &newOpts
 }
@@ -83,6 +85,8 @@ func (a *applyinator) Apply(key string) {
 
 // Run allows the applyinator to start processing items added to its workqueue
 func (a *applyinator) Run(ctx context.Context, workers int) {
+
+	logrus.Debugf("Adding items to applyinator work queue. Workers: %d", workers)
 	go func() {
 		<-ctx.Done()
 		a.workqueue.ShutDown()
@@ -101,6 +105,7 @@ func (a *applyinator) processNextWorkItem() bool {
 	obj, shutdown := a.workqueue.Get()
 
 	if shutdown {
+		logrus.Debug("ProcessNextWorkItem called during shutdown. Exiting function.")
 		return false
 	}
 
@@ -132,6 +137,7 @@ func (a *applyinator) processSingleItem(obj interface{}) error {
 		return fmt.Errorf("error syncing '%s': %s, requeuing", key, err.Error())
 	}
 
+	logrus.Debugf("Call to processSingleItem was successful for key: %s", key)
 	a.workqueue.Forget(obj)
 	return nil
 }
