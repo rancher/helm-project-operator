@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       enable_tmate:
-        description: 'Enable debugging via tmate'
+        description: "Enable debugging via tmate"
         required: false
         default: "false"
       debug:
@@ -16,19 +16,19 @@ on:
         required: false
   pull_request:
     paths-ignore:
-      - 'docs/**'
-      - 'scripts/**'
-      - '*.md'
-      - '*.dapper'
-      - '.gitignore'
-      - 'CODEOWNERS'
-      - 'LICENSE'
-      - 'Makefile'
+      - "docs/**"
+      - "scripts/**"
+      - "*.md"
+      - "*.dapper"
+      - ".gitignore"
+      - "CODEOWNERS"
+      - "LICENSE"
+      - "Makefile"
 
 env:
   GOARCH: amd64
   CGO_ENABLED: 0
-  SETUP_GO_VERSION: '^1.18'
+  SETUP_GO_VERSION: "^1.18"
   YQ_VERSION: v4.25.1
   E2E_CI: true
   REPO: rancher
@@ -48,23 +48,19 @@ jobs:
       matrix:
         k3s_version:
           # k3d version list k3s | sed 's/+/-/' | sort -h
-          - ${{ github.event.inputs.k3s_version || 'v1.20.15-k3s1' }}
+          - ${{ github.event.inputs.k3s_version || 'v1.28.4-k3s2' }}
     steps:
-      -
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      -
-        name: Install mikefarah/yq
+      - name: Install mikefarah/yq
         run: |
           sudo wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq;
-      -
-        name: Perform CI
+      - name: Perform CI
         run: |
           REPO=${REPO} TAG=${TAG} ./scripts/build;
           REPO=${REPO} TAG=${TAG} ./scripts/package;
-      -
-        name: Provision k3d Cluster
+      - name: Provision k3d Cluster
         uses: AbsaOSS/k3d-action@v2
         # k3d will automatically create a network named k3d-test-cluster-1 with the range 172.18.0.0/16
         with:
@@ -73,40 +69,30 @@ jobs:
             --agents 1
             --network "nw01"
             --image docker.io/rancher/k3s:${{matrix.k3s_version}}
-      -
-        name: Import Images Into k3d
+      - name: Import Images Into k3d
         run: |
           k3d image import ${REPO}/helm-project-operator:${TAG} -c e2e-ci-helm-project-operator;
-      -
-        name: Setup kubectl context
+      - name: Setup kubectl context
         run: |
           kubectl config use-context k3d-e2e-ci-helm-project-operator;
-      -
-        name: Set Up Tmate Debug Session
+      - name: Set Up Tmate Debug Session
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_tmate == 'true' }}
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 15
         with:
           limit-access-to-actor: true
-      -
-        name: Install Helm Project Operator
+      - name: Install Helm Project Operator
         run: ./.github/workflows/e2e/scripts/install-helm-project-operator.sh;
-      - 
-        name: Check if Helm Project Operator is up
+      - name: Check if Helm Project Operator is up
         run: ./.github/workflows/e2e/scripts/validate-helm-project-operator.sh;
-      -
-        name: Check if Project Registration Namespace is auto-created on namespace detection
+      - name: Check if Project Registration Namespace is auto-created on namespace detection
         run: ./.github/workflows/e2e/scripts/create-project-namespace.sh;
-      -
-        name: Deploy Example Chart via ProjectHelmChart CR
+      - name: Deploy Example Chart via ProjectHelmChart CR
         run: ./.github/workflows/e2e/scripts/create-projecthelmchart.sh;
-      - 
-        name: Delete Example Chart
+      - name: Delete Example Chart
         run: ./.github/workflows/e2e/scripts/delete-projecthelmchart.sh;
-      - 
-        name: Uninstall Helm Project Operator
+      - name: Uninstall Helm Project Operator
         run: ./.github/workflows/e2e/scripts/uninstall-helm-project-operator.sh;
-      - 
-        name: Delete k3d cluster
+      - name: Delete k3d cluster
         if: always()
         run: k3d cluster delete e2e-ci-helm-project-operator
