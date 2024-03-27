@@ -46,7 +46,7 @@ func (h *handler) resolveHardenedProjectRegistrationNamespaceData(namespace, nam
 	return nil, nil
 }
 
-func (h *handler) resolveServiceAccount(namespace, name string, serviceAccount *corev1.ServiceAccount) ([]relatedresource.Key, error) {
+func (h *handler) resolveServiceAccount(namespace, name string, _ *corev1.ServiceAccount) ([]relatedresource.Key, error) {
 	// check if name matches
 	if name == defaultServiceAccountName {
 		return []relatedresource.Key{{
@@ -56,7 +56,7 @@ func (h *handler) resolveServiceAccount(namespace, name string, serviceAccount *
 	return nil, nil
 }
 
-func (h *handler) resolveNetworkPolicy(namespace, name string, networkPolicy *networkingv1.NetworkPolicy) ([]relatedresource.Key, error) {
+func (h *handler) resolveNetworkPolicy(namespace, name string, _ *networkingv1.NetworkPolicy) ([]relatedresource.Key, error) {
 	// check if name matches
 	if name == defaultNetworkPolicyName {
 		return []relatedresource.Key{{
