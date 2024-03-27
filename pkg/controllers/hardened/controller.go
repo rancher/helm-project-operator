@@ -49,7 +49,7 @@ func Register(
 	namespaces.OnChange(ctx, "harden-hpo-operated-namespace", h.OnChange)
 }
 
-func (h *handler) OnChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
+func (h *handler) OnChange(_ /*name*/ string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	if namespace == nil {
 		return namespace, nil
 	}

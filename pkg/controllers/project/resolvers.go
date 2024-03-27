@@ -46,7 +46,7 @@ func (h *handler) initResolvers(ctx context.Context) {
 
 // Project Release Namespace
 
-func (h *handler) resolveProjectReleaseNamespace(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+func (h *handler) resolveProjectReleaseNamespace(_ /*namespace*/, _ /*name*/ string, obj runtime.Object) ([]relatedresource.Key, error) {
 	if obj == nil {
 		return nil, nil
 	}
@@ -62,7 +62,7 @@ func (h *handler) resolveProjectReleaseNamespace(namespace, name string, obj run
 
 // System Namespace Data
 
-func (h *handler) resolveSystemNamespaceData(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+func (h *handler) resolveSystemNamespaceData(namespace, _ /*name*/ string, obj runtime.Object) ([]relatedresource.Key, error) {
 	if namespace != h.systemNamespace {
 		return nil, nil
 	}
@@ -98,7 +98,7 @@ func (h *handler) resolveProjectRegistrationNamespaceData(namespace, name string
 	return nil, nil
 }
 
-func (h *handler) resolveProjectRegistrationNamespaceRoleBinding(namespace, name string, rb *rbacv1.RoleBinding) ([]relatedresource.Key, error) {
+func (h *handler) resolveProjectRegistrationNamespaceRoleBinding(namespace, _ /*name*/ string, rb *rbacv1.RoleBinding) ([]relatedresource.Key, error) {
 	namespaceObj, err := h.namespaceCache.Get(namespace)
 	if err != nil {
 		logrus.Debugf("Namespace not found %s: ", namespace)
@@ -134,7 +134,7 @@ func (h *handler) resolveProjectRegistrationNamespaceRoleBinding(namespace, name
 	return keys, nil
 }
 
-func (h *handler) resolveClusterRoleBinding(namespace, name string, crb *rbacv1.ClusterRoleBinding) ([]relatedresource.Key, error) {
+func (h *handler) resolveClusterRoleBinding(_ /*namespace*/, _ /*name*/ string, crb *rbacv1.ClusterRoleBinding) ([]relatedresource.Key, error) {
 	// we want to re-enqueue the ProjectHelmChart if the rolebinding's ref points to one of the operator default roles
 	_, isDefaultRoleRef := common.IsDefaultClusterRoleRef(h.opts, crb.RoleRef.Name)
 	if !isDefaultRoleRef {
@@ -174,7 +174,7 @@ func (h *handler) resolveClusterRoleBinding(namespace, name string, crb *rbacv1.
 
 // Project Release Namespace Data
 
-func (h *handler) resolveProjectReleaseNamespaceData(namespace, name string, obj runtime.Object) ([]relatedresource.Key, error) {
+func (h *handler) resolveProjectReleaseNamespaceData(_ /*namespace*/, _ /*name*/ string, obj runtime.Object) ([]relatedresource.Key, error) {
 	if obj == nil {
 		return nil, nil
 	}
