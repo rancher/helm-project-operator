@@ -28,13 +28,13 @@ on:
 env:
   GOARCH: amd64
   CGO_ENABLED: 0
-  SETUP_GO_VERSION: '^1.18'
+  SETUP_GO_VERSION: '^1.22'
   YQ_VERSION: v4.25.1
   E2E_CI: true
   REPO: rancher
   TAG: dev
   APISERVER_PORT: 8001
-  DEFAULT_SLEEP_TIMEOUT_SECONDS: 10
+  DEFAULT_SLEEP_TIMEOUT_SECONDS: 60
   KUBECTL_WAIT_TIMEOUT: 120s
   DEBUG: ${{ github.event.inputs.debug || false }}
 
@@ -48,7 +48,7 @@ jobs:
       matrix:
         k3s_version:
           # k3d version list k3s | sed 's/+/-/' | sort -h
-          - ${{ github.event.inputs.k3s_version || 'v1.20.15-k3s1' }}
+          - ${{ github.event.inputs.k3s_version || 'v1.27.7-k3s2' }}
     steps:
       -
         uses: actions/checkout@v3
@@ -58,6 +58,11 @@ jobs:
         name: Install mikefarah/yq
         run: |
           sudo wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq;
+      - 
+        name: setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
       -
         name: Perform CI
         run: |
@@ -94,6 +99,12 @@ jobs:
       - 
         name: Check if Helm Project Operator is up
         run: ./.github/workflows/e2e/scripts/validate-helm-project-operator.sh;
+      - 
+        name: Install rancher manager
+        run: ./.github/workflows/e2e/scripts/install-rancher.sh;
+      - 
+        name: Validate rancher manager
+        run: ./.github/workflows/e2e/scripts/validate-rancher.sh;
       -
         name: Check if Project Registration Namespace is auto-created on namespace detection
         run: ./.github/workflows/e2e/scripts/create-project-namespace.sh;

@@ -69,6 +69,7 @@ type ProjectHelmChartClient interface {
 type ProjectHelmChartCache interface {
 	Get(namespace, name string) (*v1alpha1.ProjectHelmChart, error)
 	List(namespace string, selector labels.Selector) ([]*v1alpha1.ProjectHelmChart, error)
+
 	AddIndexer(indexName string, indexer ProjectHelmChartIndexer)
 	GetByIndex(indexName, key string) ([]*v1alpha1.ProjectHelmChart, error)
 }
