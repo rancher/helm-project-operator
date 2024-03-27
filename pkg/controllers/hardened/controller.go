@@ -41,6 +41,7 @@ func Register(
 		namespaceCache:  namespaceCache,
 		serviceaccounts: serviceaccounts,
 		networkpolicies: networkpolicies,
+		opts:            opts,
 	}
 
 	h.initResolvers(ctx)
