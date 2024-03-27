@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Rancher Labs, Inc.
+Copyright 2024 Rancher Labs, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -69,7 +69,6 @@ type ProjectHelmChartClient interface {
 type ProjectHelmChartCache interface {
 	Get(namespace, name string) (*v1alpha1.ProjectHelmChart, error)
 	List(namespace string, selector labels.Selector) ([]*v1alpha1.ProjectHelmChart, error)
-
 	AddIndexer(indexName string, indexer ProjectHelmChartIndexer)
 	GetByIndex(indexName, key string) ([]*v1alpha1.ProjectHelmChart, error)
 }
