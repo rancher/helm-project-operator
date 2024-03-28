@@ -8,7 +8,7 @@ import (
 )
 
 // getCleanupStatus returns the status on seeing the cleanup label on a ProjectHelmChart
-func (h *handler) getCleanupStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
+func (h *handler) getCleanupStatus(projectHelmChart *v1alpha1.ProjectHelmChart, _ v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
 	return v1alpha1.ProjectHelmChartStatus{
 		Status: "AwaitingOperatorRedeployment",
 		StatusMessage: fmt.Sprintf(
@@ -21,7 +21,7 @@ func (h *handler) getCleanupStatus(projectHelmChart *v1alpha1.ProjectHelmChart, 
 }
 
 // getUnableToCreateHelmReleaseStatus returns the status on seeing a conflicting ProjectHelmChart already tracking the desired Helm release
-func (h *handler) getUnableToCreateHelmReleaseStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
+func (h *handler) getUnableToCreateHelmReleaseStatus(projectHelmChart *v1alpha1.ProjectHelmChart, _ v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
 	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
 	return v1alpha1.ProjectHelmChartStatus{
 		Status: "UnableToCreateHelmRelease",
@@ -34,7 +34,7 @@ func (h *handler) getUnableToCreateHelmReleaseStatus(projectHelmChart *v1alpha1.
 
 // getNoTargetNamespacesStatus returns the status on seeing that a ProjectHelmChart's projectNamespaceSelector (or
 // the Project Registration Namespace's namespaceSelector) targets no namespaces
-func (h *handler) getNoTargetNamespacesStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
+func (h *handler) getNoTargetNamespacesStatus(_ *v1alpha1.ProjectHelmChart, _ v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
 	return v1alpha1.ProjectHelmChartStatus{
 		Status:        "NoTargetProjectNamespaces",
 		StatusMessage: "There are no project namespaces to deploy a ProjectHelmChart.",
@@ -42,7 +42,7 @@ func (h *handler) getNoTargetNamespacesStatus(projectHelmChart *v1alpha1.Project
 }
 
 // getValuesParseErrorStatus returns the status on encountering an error with parsing the provided contents of spec.values on the ProjectHelmChart
-func (h *handler) getValuesParseErrorStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
+func (h *handler) getValuesParseErrorStatus(_ *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus, err error) v1alpha1.ProjectHelmChartStatus {
 	// retain existing status if possible
 	projectHelmChartStatus.Status = "UnableToParseValues"
 	projectHelmChartStatus.StatusMessage = fmt.Sprintf("Unable to convert provided spec.values into valid configuration of ProjectHelmChart: %s", err)
@@ -52,7 +52,7 @@ func (h *handler) getValuesParseErrorStatus(projectHelmChart *v1alpha1.ProjectHe
 // getWaitingForDashboardValuesStatus returns the transitionary status that occurs after deploying a Helm chart but before a dashboard configmap is created
 // If a ProjectHelmChart is stuck in this status, it is likely either an error on the Operator for not creating this ConfigMap or there might be an issue
 // with the underlying Job ran by the child HelmChart resource created on this ProjectHelmChart's behalf
-func (h *handler) getWaitingForDashboardValuesStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
+func (h *handler) getWaitingForDashboardValuesStatus(_ *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
 	// retain existing status
 	projectHelmChartStatus.Status = "WaitingForDashboardValues"
 	projectHelmChartStatus.StatusMessage = "Waiting for status.dashboardValues content to be provided by the deployed Helm release, but HelmChart and HelmRelease should be deployed."
@@ -61,7 +61,7 @@ func (h *handler) getWaitingForDashboardValuesStatus(projectHelmChart *v1alpha1.
 }
 
 // getDeployedStatus returns the status that indicates the ProjectHelmChart is successfully deployed
-func (h *handler) getDeployedStatus(projectHelmChart *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
+func (h *handler) getDeployedStatus(_ *v1alpha1.ProjectHelmChart, projectHelmChartStatus v1alpha1.ProjectHelmChartStatus) v1alpha1.ProjectHelmChartStatus {
 	// retain existing status
 	projectHelmChartStatus.Status = "Deployed"
 	projectHelmChartStatus.StatusMessage = "ProjectHelmChart has been successfully deployed!"

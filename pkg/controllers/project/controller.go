@@ -128,7 +128,7 @@ func Register(
 		})
 
 	remove.RegisterScopedOnRemoveHandler(ctx, projectHelmCharts, "on-project-helm-chart-remove",
-		func(key string, obj runtime.Object) (bool, error) {
+		func(_ /*key*/ string, obj runtime.Object) (bool, error) {
 			if obj == nil {
 				return false, nil
 			}
@@ -315,7 +315,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	return objs, projectHelmChartStatus, nil
 }
 
-func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmChart) (*v1alpha1.ProjectHelmChart, error) {
+func (h *handler) OnRemove(_ /*key*/ string, projectHelmChart *v1alpha1.ProjectHelmChart) (*v1alpha1.ProjectHelmChart, error) {
 	if projectHelmChart == nil {
 		return nil, nil
 	}

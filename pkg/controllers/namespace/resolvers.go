@@ -34,7 +34,7 @@ func (h *handler) resolveProjectRegistrationNamespaceData(namespace, name string
 	return nil, nil
 }
 
-func (h *handler) resolveConfigMap(namespace, name string, configmap *corev1.ConfigMap) ([]relatedresource.Key, error) {
+func (h *handler) resolveConfigMap(namespace, name string, _ *corev1.ConfigMap) ([]relatedresource.Key, error) {
 	// check if name matches
 	if name == h.getConfigMapName() {
 		return []relatedresource.Key{{

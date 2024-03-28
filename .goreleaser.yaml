@@ -1,0 +1,37 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+builds:
+    - id: helm-project-operator 
+      main: .
+      goos:
+        - linux
+      goarch:
+        - amd64
+        - arm64
+      binary: helm-project-operator
+      ldflags:
+        - -s
+        - -w
+      flags:
+        - -trimpath
+      env:
+        - CGO_ENABLED=0
+archives:
+    - id: helm-project-operator
+      builds:
+        - helm-project-operator
+      name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}'
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
