@@ -8,11 +8,13 @@ import (
 
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/helm-project-operator/pkg/operator"
+	"github.com/rancher/helm-project-operator/pkg/projectoperator"
 	"github.com/rancher/helm-project-operator/pkg/version"
 	command "github.com/rancher/wrangler-cli"
 	_ "github.com/rancher/wrangler/pkg/generated/controllers/apiextensions.k8s.io"
 	_ "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -51,7 +53,7 @@ func (o *DummyOperator) Run(cmd *cobra.Command, _ []string) error {
 
 	ctx := cmd.Context()
 
-	if err := operator.Init(ctx, o.Namespace, cfg, common.Options{
+	dummyOperator, err := projectoperator.NewProjectOperator(ctx, o.Namespace, cfg, common.Options{
 		OperatorOptions: common.OperatorOptions{
 			HelmAPIVersion:   DummyHelmAPIVersion,
 			ReleaseName:      DummyReleaseName,
@@ -60,7 +62,15 @@ func (o *DummyOperator) Run(cmd *cobra.Command, _ []string) error {
 			Singleton:        false,
 		},
 		RuntimeOptions: o.RuntimeOptions,
-	}); err != nil {
+	})
+
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := operator.Init(
+		*dummyOperator,
+	); err != nil {
 		return err
 	}
 

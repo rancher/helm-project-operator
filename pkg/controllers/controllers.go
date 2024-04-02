@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/rancher/helm-project-operator/pkg/controllers/project"
 	helmproject "github.com/rancher/helm-project-operator/pkg/generated/controllers/helm.cattle.io"
 	helmprojectcontroller "github.com/rancher/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/projectoperator"
 	"github.com/rancher/lasso/pkg/cache"
 	"github.com/rancher/lasso/pkg/client"
 	"github.com/rancher/lasso/pkg/controller"
@@ -76,39 +76,32 @@ func (a *appContext) start(ctx context.Context) error {
 }
 
 // Register registers all controllers for the Helm Project Operator based on the provided options
-func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientConfig, opts common.Options) error {
-	if len(systemNamespace) == 0 {
-		return errors.New("cannot start controllers on system namespace: system namespace not provided")
-	}
-	// always add the systemNamespace to the systemNamespaces provided
-	opts.SystemNamespaces = append(opts.SystemNamespaces, systemNamespace)
+// Assumes projectoperator.ProjectOperator is validated
+func Register(p projectoperator.ProjectOperator) error {
 
 	// parse values.yaml and questions.yaml from file
-	valuesYaml, questionsYaml, err := parseValuesAndQuestions(opts.ChartContent)
-	if err != nil {
-		logrus.Fatal(err)
-	}
 
-	appCtx, err := newContext(cfg, systemNamespace, opts)
+	appCtx, err := newContext(p)
 	if err != nil {
 		return err
 	}
 
 	appCtx.EventBroadcaster.StartLogging(logrus.Debugf)
 	appCtx.EventBroadcaster.StartRecordingToSink(&typedv1.EventSinkImpl{
-		Interface: appCtx.K8s.CoreV1().Events(systemNamespace),
+		Interface: appCtx.K8s.CoreV1().Events(p.Namespace()),
 	})
 	recorder := appCtx.EventBroadcaster.NewRecorder(schemes.All, corev1.EventSource{
 		Component: "helm-project-operator",
-		Host:      opts.NodeName,
+		Host:      p.Options().NodeName,
 	})
 
-	if !opts.DisableHardening {
-		hardeningOpts, err := common.LoadHardeningOptionsFromFile(opts.HardeningOptionsFile)
+	if !p.Options().DisableHardening {
+		hardeningOpts, err := common.LoadHardeningOptionsFromFile(p.Options().HardeningOptionsFile)
 		if err != nil {
 			return err
 		}
-		hardened.Register(ctx,
+		hardened.Register(
+			p.Context(),
 			appCtx.Apply,
 			hardeningOpts,
 			// watches
@@ -120,12 +113,13 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		)
 	}
 
-	projectGetter := namespace.Register(ctx,
+	projectGetter := namespace.Register(
+		p.Context(),
 		appCtx.Apply,
-		systemNamespace,
-		valuesYaml,
-		questionsYaml,
-		opts,
+		p.Namespace(),
+		p.ValuesYaml,
+		p.QuestionsYaml,
+		p.Options(),
 		// watches and generates
 		appCtx.Core.Namespace(),
 		appCtx.Core.Namespace().Cache(),
@@ -136,17 +130,14 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		appCtx.Dynamic,
 	)
 
-	if len(opts.ControllerName) == 0 {
-		opts.ControllerName = "helm-project-operator"
-	}
-
-	valuesOverride, err := common.LoadValuesOverrideFromFile(opts.ValuesOverrideFile)
+	valuesOverride, err := common.LoadValuesOverrideFromFile(p.Options().ValuesOverrideFile)
 	if err != nil {
 		return err
 	}
-	project.Register(ctx,
-		systemNamespace,
-		opts,
+	project.Register(
+		p.Context(),
+		p.Namespace(),
+		p.Options(),
 		valuesOverride,
 		appCtx.Apply,
 		// watches
@@ -168,11 +159,12 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		projectGetter,
 	)
 
-	if !opts.DisableEmbeddedHelmLocker {
+	if !p.Options().DisableEmbeddedHelmLocker {
 		logrus.Infof("Registering embedded Helm Locker...")
-		release.Register(ctx,
-			systemNamespace,
-			opts.ControllerName,
+		release.Register(
+			p.Context(),
+			p.Namespace(),
+			p.Options().ControllerName,
 			appCtx.HelmLocker.HelmRelease(),
 			appCtx.HelmLocker.HelmRelease().Cache(),
 			appCtx.Core.Secret(),
@@ -184,11 +176,12 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		)
 	}
 
-	if !opts.DisableEmbeddedHelmController {
+	if !p.Options().DisableEmbeddedHelmController {
 		logrus.Infof("Registering embedded Helm Controller...")
-		chart.Register(ctx,
-			systemNamespace,
-			opts.ControllerName,
+		chart.Register(
+			p.Context(),
+			p.Namespace(),
+			p.Options().ControllerName,
 			appCtx.K8s,
 			appCtx.Apply,
 			recorder,
@@ -203,12 +196,17 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 			appCtx.Core.ConfigMap())
 	}
 
-	leader.RunOrDie(ctx, systemNamespace, fmt.Sprintf("helm-project-operator-%s-lock", opts.ReleaseName), appCtx.K8s, func(ctx context.Context) {
-		if err := appCtx.start(ctx); err != nil {
-			logrus.Fatal(err)
-		}
-		logrus.Info("All controllers have been started")
-	})
+	leader.RunOrDie(
+		p.Context(),
+		p.Namespace(),
+		fmt.Sprintf("helm-project-operator-%s-lock", p.Options().ReleaseName),
+		appCtx.K8s,
+		func(ctx context.Context) {
+			if err := appCtx.start(ctx); err != nil {
+				logrus.Fatal(err)
+			}
+			logrus.Info("All controllers have been started")
+		})
 
 	return nil
 }
@@ -227,8 +225,8 @@ func controllerFactory(rest *rest.Config) (controller.SharedControllerFactory, e
 	}), nil
 }
 
-func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.Options) (*appContext, error) {
-	client, err := cfg.ClientConfig()
+func newContext(p projectoperator.ProjectOperator) (*appContext, error) {
+	client, err := p.ClientConfig().ClientConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -277,9 +275,9 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 	// Helm Project Controller
 
 	var namespace string // by default, this is unset so we watch everything
-	if len(opts.ProjectLabel) == 0 {
+	if len(p.Options().ProjectLabel) == 0 {
 		// we only need to watch the systemNamespace
-		namespace = systemNamespace
+		namespace = p.Namespace()
 	}
 
 	helmproject, err := helmproject.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
@@ -297,7 +295,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 
 	helmlocker, err := helmlocker.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
 		SharedControllerFactory: scf,
-		Namespace:               systemNamespace,
+		Namespace:               p.Namespace(),
 	})
 	if err != nil {
 		return nil, err
@@ -308,7 +306,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 
 	helm, err := k3shelm.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
 		SharedControllerFactory: scf,
-		Namespace:               systemNamespace,
+		Namespace:               p.Namespace(),
 	})
 	if err != nil {
 		return nil, err
@@ -317,7 +315,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 
 	batch, err := batch.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
 		SharedControllerFactory: scf,
-		Namespace:               systemNamespace,
+		Namespace:               p.Namespace(),
 	})
 	if err != nil {
 		return nil, err
@@ -326,7 +324,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 
 	rbac, err := rbac.NewFactoryFromConfigWithOptions(client, &generic.FactoryOptions{
 		SharedControllerFactory: scf,
-		Namespace:               systemNamespace,
+		Namespace:               p.Namespace(),
 	})
 	if err != nil {
 		return nil, err
@@ -352,7 +350,7 @@ func newContext(cfg clientcmd.ClientConfig, systemNamespace string, opts common.
 		Apply:            apply.WithSetOwnerReference(false, false),
 		EventBroadcaster: record.NewBroadcaster(),
 
-		ClientConfig: cfg,
+		ClientConfig: p.ClientConfig(),
 		starters: []start.Starter{
 			core,
 			networking,
