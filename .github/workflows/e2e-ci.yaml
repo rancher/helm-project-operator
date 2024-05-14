@@ -66,10 +66,11 @@ jobs:
       build-rancher-manager
     ]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        k3s_version:
-          - ${{ github.event.inputs.k3s_version || 'v1.27.7-k3s2' }}
+    # TODO : for now hardcode k3s version
+    # strategy:
+    #   matrix:
+    #     k3s_version:
+    #       - ${{ github.event.inputs.k3s_version || 'v1.27.7-k3s2' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -94,7 +95,7 @@ jobs:
       - name : Install k3d
         run : ./.github/workflows/e2e/scripts/install-k3d.sh
       - name : Setup k3d cluster
-        run : CLUSTER_NAME=e2e-ci-hpo ./.github/workflows/e2e/scripts/setup-k3d-cluster.sh
+        run : K3S_VERSION=v1.27.7-k3s2 CLUSTER_NAME=e2e-ci-hpo ./.github/workflows/e2e/scripts/setup-cluster.sh
       - name : Bootstrap cluster
         run : CATTLE_DEV_MODE=30 CATTLE_BOOTSTRAP_PASSWORD=admin ./bin/rancher --trace=false --add-local=true --no-cacerts
       #   name: Provision k3d Cluster
