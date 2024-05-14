@@ -14,7 +14,8 @@
 	"run": {
 		"issues": {
 			"exclude-files": [
-				"/zz_generated_"
+				"/zz_generated_",
+				"/dummy.go"
 			]
 		},
 		"deadline": "5m"
