@@ -2,6 +2,9 @@ name: CI-pullrequest
 
 on: [pull_request]
 
+env:
+  YQ_VERSION: v4.25.1
+
 jobs:
   build:
     runs-on: ubuntu-latest
