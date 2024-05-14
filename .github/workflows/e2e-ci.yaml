@@ -82,6 +82,7 @@ jobs:
           path: ./bin
       - name : Debug artifacts
         run : ls -l ./bin
+      - run : chmod +x ./bin/rancher
       - name: Install mikefarah/yq
         run: |
           sudo wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq;
