@@ -24,6 +24,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
+      # hack we require embedding an example chart in the dummy HPO
+      - name: Place empty chart
+        - run: mkdir -p ./bin/example-chart && touch ./bin/example-chart/example-chart.tgz.base64
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
