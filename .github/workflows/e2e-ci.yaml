@@ -60,7 +60,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rancher-manager-build-artifact
-          path: ./bin/rancher
+          path: ./bin
   e2e-helm-project-operator:
     needs : [
       build-rancher-manager
@@ -79,7 +79,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: rancher-manager-build-artifact
-          path: ./bin/rancher
+          path: ./bin
       - name : Debug artifacts
         run : ls -l ./bin
       - name: Install mikefarah/yq
