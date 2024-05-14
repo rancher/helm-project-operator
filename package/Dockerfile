@@ -13,11 +13,6 @@ RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm
 # TODO : debug
 RUN which helm
 # RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.2
-# TODO : start debug block
-RUN which make
-RUN which git
-RUN which bash
-# TODO : end debug block
 WORKDIR /usr/src/app
 COPY go.mod go.sum ./
 RUN go mod download
