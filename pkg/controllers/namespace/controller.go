@@ -107,6 +107,11 @@ func Register(
 // Single Namespace Handler
 
 func (h *handler) OnSingleNamespaceChange(_ /*name*/ string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
+	// TODO : figure out how to handle this edgecase
+	if namespace == nil {
+		// namespace has been deleted
+		return namespace, nil
+	}
 	if namespace.Name != h.systemNamespace {
 		// enqueue system namespace to ensure that rolebindings are updated
 

@@ -36,9 +36,10 @@ func GetCommonLabels(projectID string) map[string]string {
 	labels := map[string]string{
 		HelmProjectOperatedLabel: "true",
 	}
-	if len(projectID) != 0 {
-		labels[HelmProjectOperatorProjectLabel] = projectID
-	}
+	// FIXME: this causes webhook to reject it
+	// if len(projectID) != 0 {
+	// 	labels[HelmProjectOperatorProjectLabel] = projectID
+	// }
 	return labels
 }
 
@@ -56,7 +57,8 @@ func GetProjectNamespaceLabels(projectID, projectLabel, projectLabelValue string
 	if isOrphaned {
 		labels[HelmProjectOperatedNamespaceOrphanedLabel] = "true"
 	}
-	labels[projectLabel] = projectLabelValue
+	// FIXME: this is not allowed by webhook
+	// labels[projectLabel] = projectLabelValue
 	return labels
 }
 
