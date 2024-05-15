@@ -23,8 +23,7 @@ func (h *handler) addReconcilers(apply apply.Apply, dynamic dynamic.Interface) a
 		NamespaceableResourceInterface: dynamic.Resource(corev1.SchemeGroupVersion.WithResource("configmaps")),
 	}
 	apply = apply.WithReconciler(corev1.SchemeGroupVersion.WithKind("ConfigMap"), r.deleteAndReplace)
-
-	logrus.Infof("Adding reconcilers on the apply object %s", apply)
+	logrus.Debugf("Adding reconcilers on the apply object %s", apply)
 	return apply
 }
 

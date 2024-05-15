@@ -6,7 +6,6 @@ source $(dirname $0)/version
 cd $(dirname $0)/..
 
 mkdir -p dist/artifacts
-cp bin/helm-project-operator dist/artifacts/helm-project-operator${SUFFIX}
 
 IMAGE=${REPO}/helm-project-operator:${TAG}
 DOCKERFILE=package/Dockerfile

@@ -106,7 +106,12 @@ func Register(
 
 // Single Namespace Handler
 
-func (h *handler) OnSingleNamespaceChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
+func (h *handler) OnSingleNamespaceChange(_ /*name*/ string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
+	// TODO : figure out how to handle this edgecase
+	if namespace == nil {
+		// namespace has been deleted
+		return namespace, nil
+	}
 	if namespace.Name != h.systemNamespace {
 		// enqueue system namespace to ensure that rolebindings are updated
 
@@ -129,7 +134,7 @@ func (h *handler) OnSingleNamespaceChange(name string, namespace *corev1.Namespa
 
 // Multiple Namespaces Handler
 
-func (h *handler) OnMultiNamespaceChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
+func (h *handler) OnMultiNamespaceChange(_ /*name*/ string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	if namespace == nil {
 		logrus.Debugf("OnMultiNamespaceChange() called with no namespace.")
 		return namespace, nil

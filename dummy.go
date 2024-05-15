@@ -13,6 +13,7 @@ import (
 	_ "github.com/rancher/wrangler/pkg/generated/controllers/apiextensions.k8s.io"
 	_ "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -41,10 +42,11 @@ type DummyOperator struct {
 	Kubeconfig string `usage:"Kubeconfig file"`
 }
 
-func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
+func (o *DummyOperator) Run(cmd *cobra.Command, _ []string) error {
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
+	logrus.SetReportCaller(true)
 	debugConfig.MustSetupDebug()
 
 	cfg := kubeconfig.GetNonInteractiveClientConfig(o.Kubeconfig)

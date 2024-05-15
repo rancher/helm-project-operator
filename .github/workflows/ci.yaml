@@ -1,0 +1,25 @@
+name: CI-pullrequest
+
+on: [pull_request]
+
+env:
+  YQ_VERSION: v4.25.1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name : Checkout repository
+        uses : actions/checkout@v4
+      - name : setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Install mikefarah/yq
+        run: sudo wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq;
+      - name : Install helm 
+        run : curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 |bash
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Run CI
+        run: make ci
