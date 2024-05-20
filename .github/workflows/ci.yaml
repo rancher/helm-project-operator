@@ -29,6 +29,12 @@ jobs:
           helm version
       - name: Perform CI
         run : make ci
+  push-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name : Export image version
         run : |
           source ./scripts/version

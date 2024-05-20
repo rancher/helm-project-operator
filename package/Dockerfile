@@ -13,6 +13,7 @@ COPY --from=helm ./helm/bin/helm /usr/local/bin/
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+RUN make build-chart
 RUN make build
 
 FROM registry.suse.com/bci/bci-micro:15.5
