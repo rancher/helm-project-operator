@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: 
-      image: rancher/dapper:v0.5.4
+      image: rancher/dapper:v0.6.0
     steps:
       - uses: actions/checkout@v1
       - name: Run CI
