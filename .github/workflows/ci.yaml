@@ -1,0 +1,51 @@
+name: ci
+
+env:
+  CGO_ENABLED: 0
+  YQ_VERSION: v4.25.1
+
+on: [ pull_request ]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name : setup Go
+        uses : actions/setup-go@v5
+        with:
+          go-version: 1.22
+      - name: Install mikefarah/yq
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq;
+      - name : Install helm
+        run : |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+          helm version
+      - name: Perform CI
+        run : make ci
+  push-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name : Export image version
+        run : |
+          source ./scripts/version
+          echo IMAGE=$IMAGE >> $GITHUB_ENV
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3 
+      - name: Build Helm Project Operator image 
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./package/Dockerfile
+          push: false
+          tags: ${{ env.IMAGE }}
+          platforms: linux/amd64
