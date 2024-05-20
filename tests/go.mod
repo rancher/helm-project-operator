@@ -2,12 +2,15 @@ module github.com/rancher/helm-project-operator/tests
 
 go 1.22.3
 
+replace github.com/rancher/helm-project-operator => ../
+
 require (
 	github.com/caarlos0/env/v11 v11.0.0
 	github.com/kralicky/kmatch v0.0.0-20240520175119-f7ab43044a0d
 	github.com/novln/docker-parser v1.0.0
 	github.com/onsi/ginkgo/v2 v2.17.3
 	github.com/onsi/gomega v1.33.1
+	github.com/rancher/helm-project-operator v0.0.0-00010101000000-000000000000
 	github.com/samber/lo v1.39.0
 	golang.org/x/mod v0.17.0
 	k8s.io/api v0.30.1

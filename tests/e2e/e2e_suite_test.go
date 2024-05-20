@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"k8s.io/client-go/rest"
 
 	// "sigs.k8s.io/controller-runtime/pkg/client"
@@ -78,5 +79,6 @@ var _ = BeforeSuite(func() {
 	newK8sClient, err := client.New(cfg, client.Options{})
 	Expect(err).NotTo(HaveOccurred(), "Could not initialize kubernetes client")
 	k8sClient = newK8sClient
+	v1alpha1.AddToScheme(k8sClient.Scheme())
 	kmatch.SetDefaultObjectClient(k8sClient)
 })

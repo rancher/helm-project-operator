@@ -16,12 +16,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	// "sigs.k8s.io/controller-runtime/pkg/client"
 
+	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 )
 
+var (
+	// TODO  could be improved to be read from the values.yaml possibly
+	cfgName = strings.ReplaceAll("dummy.cattle.io/v1alpha1", "/", ".")
+)
+
+// hardcoded labels / annotations / values
 const (
 	// TODO : this will be subject to change
 
@@ -30,8 +38,12 @@ const (
 
 	labelHelmProj           = "helm.cattle.io/projectId"
 	labelOperatedByHelmProj = "helm.cattle.io/helm-project-operated"
+)
 
+// test constants
+const (
 	testProjectName = "p-example"
+	testPHCName     = "project-example-chart"
 )
 
 func projectNamespace(project string) string {
@@ -199,8 +211,8 @@ var _ = Describe("E2E helm project operator tests", Ordered, Label("integration"
 
 		})
 
-		Context("Check that project registration namespace is created", func() {
-			It("Should create a project registration namespace", func() {
+		When("a project registration namespace is created", func() {
+			It("Should create the project registration namespace", func() {
 				By("creating the project registration namespace")
 				ns := &corev1.Namespace{
 					ObjectMeta: metav1.ObjectMeta{
@@ -237,6 +249,61 @@ var _ = Describe("E2E helm project operator tests", Ordered, Label("integration"
 						labelProjectId, testProjectName,
 					),
 				))
+
+				By("verifying the helm project operator has created the helm api configmap")
+				configMap := &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      cfgName,
+						Namespace: projectNamespace(testProjectName),
+					},
+				}
+				Eventually(Object(configMap)).Should(Exist())
+			})
+		})
+
+		When("We create a ProjectHelmChart", func() {
+			It("should create the project-helm-chart object", func() {
+				projH := v1alpha1.ProjectHelmChart{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      testPHCName,
+						Namespace: projectNamespace(testProjectName),
+					},
+					Spec: v1alpha1.ProjectHelmChartSpec{
+						HelmAPIVersion: "dummy.cattle.io/v1alpha1",
+						Values: v1alpha1.GenericMap{
+							"data": map[string]interface{}{
+								"hello": "e2e-ci",
+							},
+						},
+					},
+				}
+				Expect(k8sClient.Create(testCtx, &projH)).To(Succeed())
+			})
+
+			It("should create the associated CRs with this project helm charts", func() {
+				// TODO : add the helm release CRs to the scheme
+			})
+
+			It("should create the job which deploys the helm chart", func() {
+				job := &batchv1.Job{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("helm-install-%s-dummy", testPHCName),
+						Namespace: "cattle-helm-system",
+					},
+				}
+				Eventually(Object(job)).Should(Exist())
+
+				Eventually(func() error {
+					retJob, err := Object(job)()
+					if err != nil {
+						return err
+					}
+					if retJob.Status.Succeeded < 1 {
+						return fmt.Errorf("job has not yet succeeded")
+					}
+					return nil
+				}).Should(Succeed())
+
 			})
 		})
 	})
