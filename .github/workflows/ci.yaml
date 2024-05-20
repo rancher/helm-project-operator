@@ -35,7 +35,7 @@ jobs:
           echo IMAGE=$IMAGE >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3 
-      - name: Build and push PushProx client image
+      - name: Build Helm Project Operator image 
         uses: docker/build-push-action@v5
         with:
           context: .

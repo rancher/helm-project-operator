@@ -25,3 +25,4 @@ REPO=${REPO:-rancher}
 if echo $TAG | grep -q dirty; then
     TAG=dev
 fi
+IMAGE=${IMAGE:-${REPO}/helm-project-operator:${TAG}}
