@@ -28,7 +28,6 @@ on:
 env:
   GOARCH: amd64
   CGO_ENABLED: 0
-  SETUP_GO_VERSION: '^1.18'
   YQ_VERSION: v4.25.1
   E2E_CI: true
   REPO: rancher
@@ -54,6 +53,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name : setup Go
+        uses : actions/setup-go@v5
+        with:
+          go-version: 1.22
       -
         name: Install mikefarah/yq
         run: |
