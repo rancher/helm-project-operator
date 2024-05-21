@@ -1,7 +1,5 @@
 name : Publish images
 
-name : Publish Images
-
 on:
   push:
     tags:
