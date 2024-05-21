@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
+	k3shelmv1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	lockerv1alpha1 "github.com/rancher/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
-	"k8s.io/client-go/rest"
 
-	// "sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/client-go/rest"
 
 	env "github.com/caarlos0/env/v11"
 	"github.com/kralicky/kmatch"
@@ -80,5 +81,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred(), "Could not initialize kubernetes client")
 	k8sClient = newK8sClient
 	v1alpha1.AddToScheme(k8sClient.Scheme())
+	k3shelmv1.AddToScheme(k8sClient.Scheme())
+	lockerv1alpha1.AddToScheme(k8sClient.Scheme())
 	kmatch.SetDefaultObjectClient(k8sClient)
 })

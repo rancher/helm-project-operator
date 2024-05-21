@@ -15,7 +15,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	// "sigs.k8s.io/controller-runtime/pkg/client"
-
+	k3shelmv1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
+	lockerv1alpha1 "github.com/rancher/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -25,13 +26,13 @@ import (
 )
 
 var (
-	// TODO  could be improved to be read from the values.yaml possibly
+	//  could be improved to be read from the values.yaml possibly
 	cfgName = strings.ReplaceAll("dummy.cattle.io/v1alpha1", "/", ".")
 )
 
 // hardcoded labels / annotations / values
 const (
-	// TODO : this will be subject to change
+	// TODO : this will be subject to change as I update the code
 
 	labelProjectId = "field.cattle.io/projectId"
 	annoProjectId  = "field.cattle.io/projectId"
@@ -42,8 +43,14 @@ const (
 
 // test constants
 const (
+	// opaque project name
 	testProjectName = "p-example"
-	testPHCName     = "project-example-chart"
+	// opaque name give to our project helm chart CR
+	testPHCName = "project-example-chart"
+	// install namespace of the chart
+	chartNs = "cattle-helm-system"
+	// comes from dummy.go common.OperatorOptions
+	releaseName = "dummy"
 )
 
 func projectNamespace(project string) string {
@@ -175,7 +182,7 @@ var _ = Describe("E2E helm project operator tests", Ordered, Label("integration"
 			helmInstaller := newHelmInstaller(
 				WithContext(ctxT),
 				WithCreateNamespace(),
-				WithNamespace("cattle-helm-system"),
+				WithNamespace(chartNs),
 				WithReleaseName("helm-project-operator"),
 				WithChartRegistry("../../charts/helm-project-operator"),
 				WithValue("image.repository", "rancher/helm-project-operator"),
@@ -281,18 +288,34 @@ var _ = Describe("E2E helm project operator tests", Ordered, Label("integration"
 			})
 
 			It("should create the associated CRs with this project helm charts", func() {
-				// TODO : add the helm release CRs to the scheme
+				By("verifying the k3s-io helm-controller has created the helm chart")
+				helmchart := &k3shelmv1.HelmChart{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("%s-%s", testPHCName, releaseName),
+						Namespace: chartNs,
+					},
+				}
+				Eventually(Object(helmchart), time.Second*15, time.Millisecond*50).Should(Exist())
+
+				By("verifying the helm locker has created the associated helm release")
+				helmchartRelease := &lockerv1alpha1.HelmRelease{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("%s-%s", testPHCName, releaseName),
+						Namespace: chartNs,
+					},
+				}
+				Eventually(Object(helmchartRelease), time.Second*15, time.Millisecond*50).Should(Exist())
 			})
 
 			It("should create the job which deploys the helm chart", func() {
 				job := &batchv1.Job{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      fmt.Sprintf("helm-install-%s-dummy", testPHCName),
-						Namespace: "cattle-helm-system",
+						Name:      fmt.Sprintf("helm-install-%s-%s", testPHCName, releaseName),
+						Namespace: chartNs,
 					},
 				}
 				Eventually(Object(job)).Should(Exist())
-
+				// TODO this works, but would be better to mirror the condition in kubectl wait --for=complete
 				Eventually(func() error {
 					retJob, err := Object(job)()
 					if err != nil {
@@ -303,7 +326,76 @@ var _ = Describe("E2E helm project operator tests", Ordered, Label("integration"
 					}
 					return nil
 				}).Should(Succeed())
+			})
 
+			When("We delete a project helm chart", func() {
+				It("should delete the project helm chart CR", func() {
+					projH := &v1alpha1.ProjectHelmChart{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      testPHCName,
+							Namespace: projectNamespace(testProjectName),
+						},
+						Spec: v1alpha1.ProjectHelmChartSpec{
+							HelmAPIVersion: "dummy.cattle.io/v1alpha1",
+							Values: v1alpha1.GenericMap{
+								"data": map[string]interface{}{
+									"hello": "e2e-ci",
+								},
+							},
+						},
+					}
+					Expect(k8sClient.Delete(testCtx, projH)).To(Succeed())
+				})
+				//FIXME: this spec could be flaky
+				It("should have created the matching delete job", func() {
+					deleteJob := &batchv1.Job{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      fmt.Sprintf("helm-delete-%s-%s", testPHCName, releaseName),
+							Namespace: chartNs,
+						},
+					}
+					Eventually(Object(deleteJob)).Should(Exist())
+
+					Eventually(func() error {
+						retJob, err := Object(deleteJob)()
+						if err != nil {
+							return err
+						}
+						if retJob.Status.Succeeded < 1 {
+							return fmt.Errorf("delete job has not yet succeeded")
+						}
+						return nil
+					}).Should(Succeed())
+				})
+
+				It("should make sure that resources that should be absent are absent", func() {
+					By("verifying the project helm chart has been deleted")
+					projH := &v1alpha1.ProjectHelmChart{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      testPHCName,
+							Namespace: projectNamespace(testProjectName),
+						},
+					}
+					Consistently(Object(projH)).ShouldNot(Exist())
+
+					By("verifying the helm chart CR has been deleted")
+					helmchart := &k3shelmv1.HelmChart{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      fmt.Sprintf("%s-%s", testPHCName, releaseName),
+							Namespace: chartNs,
+						},
+					}
+					Consistently(Object(helmchart)).Should(Not(Exist()))
+
+					By("verifying the helm locker release CR has been deleted")
+					helmchartRelease := &lockerv1alpha1.HelmRelease{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      fmt.Sprintf("%s-%s", testPHCName, releaseName),
+							Namespace: chartNs,
+						},
+					}
+					Consistently(Object(helmchartRelease)).Should(Not(Exist()))
+				})
 			})
 		})
 	})

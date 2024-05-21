@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os/exec"
@@ -53,7 +54,8 @@ func StartCmd(cmd *exec.Cmd) (Session, error) {
 	}, nil
 }
 
-func streamLogs(namespace string, podName string) {
+// nolint:unused
+func streamLogs(ctx context.Context, namespace string, podName string) {
 	logOptions := &corev1.PodLogOptions{
 		Follow: true,
 	}
@@ -61,7 +63,7 @@ func streamLogs(namespace string, podName string) {
 	req := clientSet.CoreV1().Pods(namespace).GetLogs(podName, logOptions)
 	lo.Async(
 		func() error {
-			stream, err := req.Stream(testCtx)
+			stream, err := req.Stream(ctx)
 			if err != nil {
 				return err
 			}

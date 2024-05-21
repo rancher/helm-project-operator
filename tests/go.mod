@@ -6,10 +6,12 @@ replace github.com/rancher/helm-project-operator => ../
 
 require (
 	github.com/caarlos0/env/v11 v11.0.0
+	github.com/k3s-io/helm-controller v0.13.1
 	github.com/kralicky/kmatch v0.0.0-20240520175119-f7ab43044a0d
 	github.com/novln/docker-parser v1.0.0
 	github.com/onsi/ginkgo/v2 v2.17.3
 	github.com/onsi/gomega v1.33.1
+	github.com/rancher/helm-locker v0.0.0-20220511204622-3b216418e2f4
 	github.com/rancher/helm-project-operator v0.0.0-00010101000000-000000000000
 	github.com/samber/lo v1.39.0
 	golang.org/x/mod v0.17.0
@@ -45,6 +47,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rancher/wrangler v0.8.11-0.20220217210408-3ecd23dfea3b // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
