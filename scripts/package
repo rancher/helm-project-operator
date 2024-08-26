@@ -4,15 +4,7 @@ set -e
 source $(dirname $0)/version
 
 cd $(dirname $0)/..
-
-mkdir -p dist/artifacts
-cp bin/helm-project-operator dist/artifacts/helm-project-operator${SUFFIX}
-
-IMAGE=${REPO}/helm-project-operator:${TAG}
+echo Building ${IMAGE} ...
 DOCKERFILE=package/Dockerfile
-if [ -e ${DOCKERFILE}.${ARCH} ]; then
-    DOCKERFILE=${DOCKERFILE}.${ARCH}
-fi
-
 docker build -f ${DOCKERFILE} -t ${IMAGE} .
 echo Built ${IMAGE}
