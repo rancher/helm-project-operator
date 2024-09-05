@@ -1,7 +1,21 @@
-FROM registry.suse.com/bci/golang:1.22 AS helm
-RUN zypper -n install git
-RUN git -C / clone --branch release-v3.9.0 --depth=1 https://github.com/rancher/helm
+# Image that provides cross compilation tooling.
+FROM --platform=$BUILDPLATFORM rancher/mirrored-tonistiigi-xx:1.3.0 AS xx
+
+FROM --platform=$BUILDPLATFORM registry.suse.com/bci/golang:1.22 AS helm
+
+# Clone repository once, and reuse it for target archs.
+ARG HELM_VERSION=release-v3.9.0
+ADD --keep-git-dir=true https://github.com/rancher/helm.git#${HELM_VERSION} /helm
+RUN cd /helm && go mod download
+
+COPY --from=xx / /
+
+# Cross-compile instead of emulating the compilation on the target arch.
+ARG TARGETPLATFORM
+RUN xx-go --wrap && mkdir -p /run/lock
 RUN make -C /helm
+
+RUN xx-verify --static /helm/bin/helm
 
 FROM registry.suse.com/bci/golang:1.22 AS builder
 WORKDIR /usr/src/app
@@ -9,7 +23,7 @@ ENV YQ_VERSION=v4.25.1
 RUN zypper -n install git curl wget make
 RUN export ARCH=$(go env GOHOSTARCH)
 RUN wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq;
-COPY --from=helm ./helm/bin/helm /usr/local/bin/
+COPY --from=helm /helm/bin/helm /usr/local/bin/
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
