@@ -3,7 +3,7 @@ RUN zypper -n install git
 RUN git -C / clone --branch release-v3.9.0 --depth=1 https://github.com/rancher/helm
 RUN make -C /helm
 
-FROM registry.suse.com/bci/golang:1.22 as builder
+FROM registry.suse.com/bci/golang:1.22 AS builder
 WORKDIR /usr/src/app
 ENV YQ_VERSION=v4.25.1
 RUN zypper -n install git curl wget make
