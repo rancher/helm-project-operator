@@ -16,7 +16,7 @@ COPY . .
 RUN make build-chart
 RUN make build
 
-FROM registry.suse.com/bci/bci-micro:15.5
+FROM registry.suse.com/bci/bci-micro:15.6
 RUN echo 'helmprojectoperator:x:1000:1000::/home/helmprojectoperator:/bin/bash' >> /etc/passwd && \
     echo 'helmprojectoperator:x:1000:' >> /etc/group && \
     mkdir /home/helmprojectoperator && \
