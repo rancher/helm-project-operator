@@ -14,7 +14,7 @@ func main() {
 	if err := os.RemoveAll("./pkg/generated"); err != nil {
 		logrus.Fatal(err)
 	}
-	if err := os.RemoveAll("./crds"); err != nil {
+	if err := os.RemoveAll("./crds/helm-project-operator"); err != nil {
 		logrus.Fatal(err)
 	}
 }
