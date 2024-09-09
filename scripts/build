@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-BUILD_TARGET_CMD=${BUILD_TARGET_CMD:-"./helm-project-operator.go"}
+BUILD_TARGET_CMD=${BUILD_TARGET_CMD:-"./${BUILD_TARGET}.go"}
 
 source $(dirname $0)/version
 

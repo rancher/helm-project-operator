@@ -1,7 +1,11 @@
 #!/bin/bash
 set -e
 
+BUILD_TARGET=${BUILD_TARGET:-"helm-project-operator"}
+
 cd $(dirname $0)
+
+export BUILD_TARGET
 
 ./build
 ./test

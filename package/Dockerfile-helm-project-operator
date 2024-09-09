@@ -18,6 +18,10 @@ RUN make -C /helm
 RUN xx-verify --static /helm/bin/helm
 
 FROM registry.suse.com/bci/golang:1.22 AS builder
+
+ARG BUILD_TARGET
+ENV BUILD_TARGET=${BUILD_TARGET}
+
 WORKDIR /usr/src/app
 ENV YQ_VERSION=v4.25.1
 RUN zypper -n install git curl wget make
