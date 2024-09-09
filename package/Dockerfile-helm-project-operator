@@ -19,8 +19,7 @@ RUN xx-verify --static /helm/bin/helm
 
 FROM registry.suse.com/bci/golang:1.22 AS builder
 
-ARG BUILD_TARGET
-ENV BUILD_TARGET=${BUILD_TARGET}
+ENV BUILD_TARGET="helm-project-operator"
 
 WORKDIR /usr/src/app
 ENV YQ_VERSION=v4.25.1

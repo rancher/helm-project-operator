@@ -8,5 +8,5 @@ source $(dirname $0)/version
 cd $(dirname $0)/..
 echo Building ${IMAGE} ...
 DOCKERFILE=package/Dockerfile${DOCKER_TARGET}
-docker build --build-arg BUILD_TARGET=${BUILD_TARGET} -f ${DOCKERFILE} -t ${IMAGE} .
+docker build -f ${DOCKERFILE} -t ${IMAGE} .
 echo Built ${IMAGE}
