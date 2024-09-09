@@ -6,11 +6,11 @@ import (
 
 	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
 	k3shelmcontroller "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io/v1"
-	helmlockercontroller "github.com/rancher/helm-locker/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/helm-project-operator/pkg/controllers/namespace"
 	helmprojectcontroller "github.com/rancher/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	helmlockercontroller "github.com/rancher/helm-project-operator/pkg/helm-locker/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/remove"
 	"github.com/rancher/wrangler/pkg/apply"
 	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
