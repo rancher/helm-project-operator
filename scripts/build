@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+BUILD_TARGET_CMD=${BUILD_TARGET_CMD:-"./helm-project-operator.go"}
+
 source $(dirname $0)/version
 
 cd $(dirname $0)/..
@@ -13,8 +15,8 @@ if [ "$(uname)" = "Linux" ]; then
 fi
 LINKFLAGS="-X github.com/rancher/helm-project-operator/pkg/version.Version=$VERSION"
 LINKFLAGS="-X github.com/rancher/helm-project-operator/pkg/version.GitCommit=$COMMIT $LINKFLAGS"
-CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/helm-project-operator
+CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/helm-project-operator "${BUILD_TARGET_CMD}"
 if [ "$CROSS" = "true" ] && [ "$ARCH" = "amd64" ]; then
-    GOOS=darwin go build -ldflags "$LINKFLAGS" -o bin/helm-project-operator-darwin
-    GOOS=windows go build -ldflags "$LINKFLAGS" -o bin/helm-project-operator-windows
+    GOOS=darwin go build -ldflags "$LINKFLAGS" -o bin/helm-project-operator-darwin "${BUILD_TARGET_CMD}"
+    GOOS=windows go build -ldflags "$LINKFLAGS" -o bin/helm-project-operator-windows "${BUILD_TARGET_CMD}"
 fi
