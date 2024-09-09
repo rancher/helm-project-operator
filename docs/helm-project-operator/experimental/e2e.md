@@ -17,7 +17,7 @@ To run the end-to-end GitHub Workflow CI locally to test whether your changes wo
 An slim image has been defined in [`.github/workflows/e2e/package/Dockerfile`](../../../.github/workflows/e2e/package/Dockerfile) that has the necessary dependencies to be used as a Runner for act for this GitHub Workflow. To build the image, run the following commmand (make sure you re-run it if you make any changes to add dependencies):
 
 ```bash
-docker build -f ./.github/workflows/e2e/package/Dockerfile -t rancher/helm-project-operator-e2e:latest .
+docker build -f ./.github/workflows/e2e/package/Dockerfile-project-operator -t rancher/helm-project-operator-e2e:latest .
 ```
 
 Once you have built the image and installed `act`, simply run the following command on the root of this repository and it will run your GitHub workflow within a Docker container:

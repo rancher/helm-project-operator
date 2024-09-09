@@ -21,13 +21,13 @@ docs/
 
 ## This directory contains the image that is used to build rancher/helm-locker, which is hosted on hub.docker.com
 package/
-  Dockerfile
+  Dockerfile-project-operator
 
 ## The main source directory for the code. See below for more details.
 pkg/
 
-## The Dockerfile used to run CI and other scripts executed by make in a Docker container (powered by https://github.com/rancher/dapper)
-Dockerfile.dapper
+## The Dockerfile-project-operator used to run CI and other scripts executed by make in a Docker container (powered by https://github.com/rancher/dapper)
+Dockerfile-project-operator.dapper
 
 ## The file that contains the underlying actions that 'go generate' needs to execute on a call to it. Includes the logic for generating controllers and updating crds.yaml under the crds/ directory
 generate.go
