@@ -9,7 +9,7 @@ It is intended to be implemented by a Project Operator (e.g. [`rancher/prometheu
 
 ## Getting Started
 
-For more information, see the [Getting Started guide](docs/gettingstarted.md).
+For more information, see the [Getting Started guide](docs/helm-project-operator/gettingstarted.md).
 
 ## Developing
 
@@ -17,7 +17,7 @@ For more information, see the [Getting Started guide](docs/gettingstarted.md).
 
 Helm Project Operator is built and released off the contents of the `main` branch. To make a contribution, open up a PR to the `main` branch.
 
-For more information, see the [Developing guide](docs/developing.md).
+For more information, see the [Developing guide](docs/helm-project-operator/developing.md).
 
 ## Design
 
@@ -25,7 +25,7 @@ Helm Project Operator is built on top of [k3s-io/helm-controller](https://github
 
 For an example of how Helm Project Operator can be implemented, please see [`rancher/prometheus-federator`](https://github.com/rancher/prometheus-federator).
 
-For more information in general, please see [docs/design.md](docs/design.md).
+For more information in general, please see [docs/design.md](docs/helm-project-operator/design.md).
 
 ## Building
 
