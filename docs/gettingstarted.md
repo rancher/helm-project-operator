@@ -24,7 +24,7 @@ helm install -n cattle-helm-system helm-project-operator charts/helm-project-ope
 4. Find the Job in the Operator / System (`cattle-helm-system`) namespace tied to the HelmChart object to view the Helm operation logs that were performed on behalf of the HelmChart resource created; these logs should show as successful.
 5. Check to see if a HelmRelease CR was created on behalf of that ProjectHelmChart in the Operator / System (`cattle-helm-system`) namespace
 6. Ensure that the status of the HelmRelease CR shows that it has successfully found the Helm release secret for the Helm chart deployed by the HelmChart CR.
-7. Locate the Project Release Namespace (see [design.md](design.md) for more information on how to identify this) and ensure that the ConfigMaps contained within `charts/example-chart` were deployed onto the cluster.
+7. Locate the Project Release Namespace (see [design.md](design.md) for more information on how to identify this) and ensure that the ConfigMaps contained within `charts/project-operator-example` were deployed onto the cluster.
 8. Try to modify or delete the resources; you should see that they are instantly recreated or fixed back into place.
 9. Try supplying overrides to the deployed Helm chart by modifying `spec.values` on the ProjectHelmChart resource the `data` value to any YAML you want; on supplying new YAML to the ProjectHelmChart, you should see the Helm Operator Job (deployed on behalf of the HelmChart resource) be modified and you should observe that the HelmRelease CR emits an event (observable by running `kubectl describe -n cattle-helm-system <helm-release>` on the HelmRelease object) that indicates that it is Transitioning and then Locked; the release number will also be updated.
 

@@ -5,7 +5,7 @@ source $(dirname $0)/version
 
 cd $(dirname $0)/..
 
-CHART=example-chart
+CHART=project-operator-example
 VERSION=0.0.0
 
 helm package charts/${CHART} --destination bin/${CHART}

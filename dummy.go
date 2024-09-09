@@ -17,18 +17,18 @@ import (
 )
 
 const (
-	// DummyHelmAPIVersion is the spec.helmApiVersion corresponding to the dummy example-chart
+	// DummyHelmAPIVersion is the spec.helmApiVersion corresponding to the dummy project-operator-example chart
 	DummyHelmAPIVersion = "dummy.cattle.io/v1alpha1"
 
-	// DummyReleaseName is the release name corresponding to the operator that deploys the dummy example-chart
+	// DummyReleaseName is the release name corresponding to the operator that deploys the dummy project-operator-example chart
 	DummyReleaseName = "dummy"
 )
 
 var (
-	// DummySystemNamespaces is the system namespaces scoped for the dummy example-chart.
+	// DummySystemNamespaces is the system namespaces scoped for the dummy project-operator-example chart.
 	DummySystemNamespaces = []string{"kube-system"}
 
-	//go:embed bin/example-chart/example-chart.tgz.base64
+	//go:embed bin/project-operator-example/project-operator-example.tgz.base64
 	base64TgzChart string
 
 	debugConfig command.DebugConfig

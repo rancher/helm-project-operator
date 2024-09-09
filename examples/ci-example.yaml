@@ -6,7 +6,7 @@
 apiVersion: helm.cattle.io/v1alpha1
 kind: ProjectHelmChart
 metadata:
-  name: project-example-chart
+  name: project-operator-example-chart
   namespace: cattle-project-p-example
 spec:
   helmApiVersion: dummy.cattle.io/v1alpha1

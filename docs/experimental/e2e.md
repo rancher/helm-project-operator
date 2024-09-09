@@ -2,7 +2,7 @@
 
 ## What does E2E CI do?
 
-The E2E CI described in [.github/scripts/](../../.github/workflows/e2e-ci.yaml) checks out the current Git repository, builds a Docker image using the repository's build scripts, sets up a [k3d](https://k3d.io) cluster, imports the built `helm-project-operator` image into the cluster (which automatically uses the latest `example-chart` chart since it is embedded into the binary as part of the build process), and then uses Helm to install `helm-project-operator` (using the Helm chart contained in the repository).
+The E2E CI described in [.github/scripts/](../../.github/workflows/e2e-ci.yaml) checks out the current Git repository, builds a Docker image using the repository's build scripts, sets up a [k3d](https://k3d.io) cluster, imports the built `helm-project-operator` image into the cluster (which automatically uses the latest `project-operator-example` chart since it is embedded into the binary as part of the build process), and then uses Helm to install `helm-project-operator` (using the Helm chart contained in the repository).
 
 Once it is installed, it will run checks to ensure that all workloads are up and running in the Helm install and then mimic creating a Project (by creating a namespace with a particular label on it). 
 

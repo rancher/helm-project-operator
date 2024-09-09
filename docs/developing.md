@@ -4,7 +4,7 @@
 
 ```bash
 ## This directory contains a Helm chart that can be used to deploy Helm Project Operator in a Kubernetes cluster in the cattle-helm-system namespace,
-## which deploys example-chart (located under charts/example-chart) on seeing a ProjectHelmChart with spec.helmApiVersion: dummy.cattle.io/v1alpha1.
+## which deploys project-operator-example (located under charts/project-operator-example) on seeing a ProjectHelmChart with spec.helmApiVersion: dummy.cattle.io/v1alpha1.
 charts/
   ## The main chart that deploys Helm Project Operator in the cluster.
   helm-project-operator/
@@ -13,12 +13,12 @@ charts/
   ## a Project Registration Namespace with spec.helmApiVersion set to dummy.cattle.io/v1alpha1)
   ##
   ## This chart is not expected to ever be deployed standalone; it is embedded into the Helm Project Operator binary itself.
-  example-chart/
+  project-operator-example/
 
 ## This directory will contain additional docs to assist users in getting started with using Helm Project Operator.
 docs/
 
-## This directory contains example ProjectHelmCharts that can be deployed that work on the default example-chart packaged with the Helm Project Operator
+## This directory contains example ProjectHelmCharts that can be deployed that work on the default project-operator-example packaged with the Helm Project Operator
 examples/
 
 ## This directory contains the image that is used to build rancher/helm-project-operator, which is hosted on hub.docker.com.
@@ -124,5 +124,5 @@ Once the image is successfully packaged, simply run `docker push ${REPO}/helm-pr
 
 1. Ensure that your `KUBECONFIG` environment variable is pointing to your cluster (e.g. `export KUBECONFIG=<path-to-kubeconfig>; kubectl get nodes` should show the nodes of your cluster) and pull in this repository locally
 2. Go to the root of your local copy of this repository and deploy the Helm Project Operator chart as a Helm 3 chart onto your cluster after overriding the image and tag values with your Docker repository and tag: run `helm upgrade --install --set image.repository="${REPO}/helm-project-operator" --set image.tag="${TAG}" --set image.pullPolicy=Always helm-project-operator -n cattle-helm-system charts/helm-project-operator`
-> Note: Why do we set the Image Pull Policy to `Always`? If you update the Docker image on your fork, setting the Image Pull Policy to `Always` ensures that running `kubectl rollout restart -n cattle-helm-system deployment/helm-project-operator` is all you need to do to update your running deployment to the new image, since this would ensure redeploying a deployment triggers a image pull that uses your most up-to-date Docker image. Also, since the underlying Helm chart deployed by the operator (e.g. `example-chart`) is directly embedded into the Helm Project Operator image, you also do not need to update the Deployment object itself to see all the HelmCharts in your cluster automatically be updated to the latest embedded version of the chart.
+> Note: Why do we set the Image Pull Policy to `Always`? If you update the Docker image on your fork, setting the Image Pull Policy to `Always` ensures that running `kubectl rollout restart -n cattle-helm-system deployment/helm-project-operator` is all you need to do to update your running deployment to the new image, since this would ensure redeploying a deployment triggers a image pull that uses your most up-to-date Docker image. Also, since the underlying Helm chart deployed by the operator (e.g. `project-operator-example`) is directly embedded into the Helm Project Operator image, you also do not need to update the Deployment object itself to see all the HelmCharts in your cluster automatically be updated to the latest embedded version of the chart.
 3. Profit!
