@@ -23,13 +23,13 @@ examples/
 
 ## This directory contains the image that is used to build rancher/helm-project-operator, which is hosted on hub.docker.com.
 package/
-  Dockerfile-project-operator
+  Dockerfile-helm-project-operator
 
 ## The main source directory for the code. See below for more details.
 pkg/
 
-## The Dockerfile-project-operator used to run CI and other scripts executed by make in a Docker container (powered by https://github.com/rancher/dapper)
-Dockerfile-project-operator.dapper
+## The Dockerfile-helm-project-operator used to run CI and other scripts executed by make in a Docker container (powered by https://github.com/rancher/dapper)
+Dockerfile-helm-project-operator.dapper
 
 ## The file that contains the underlying actions that 'go generate' needs to execute on a call to it. Includes the logic for generating 
 ## controllers and updating the crds.yaml under the crds/ directory
