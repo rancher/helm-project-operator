@@ -65,7 +65,7 @@ func writeFiles(dirpath string, objs []runtime.Object) error {
 	for key, data := range objMap {
 		go func(key string, data []byte) {
 			defer wg.Done()
-			f, err := os.Create(filepath.Join(dirpath, fmt.Sprintf("crd-%s.yaml", key)))
+			f, err := os.Create(filepath.Join(dirpath, fmt.Sprintf("%s.yaml", key)))
 			if err != nil {
 				logrus.Error(err)
 			}
