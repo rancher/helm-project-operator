@@ -1,3 +1,5 @@
+//go:build helm_project_operator
+
 package main
 
 import (
