@@ -1,13 +1,15 @@
 #!/bin/bash
 set -e
 
-BUILD_TARGET_CMD=${BUILD_TARGET_CMD:-"./${BUILD_TARGET}.go"}
 
 source $(dirname $0)/version
+BUILD_CMD_TARGET=${BUILD_CMD_TARGET:-"./cmd/${BUILD_TARGET}/main.go"}
 
 cd $(dirname $0)/..
 
 ./scripts/build-chart
+
+echo "Building \`${BUILD_TARGET}\` from \`${BUILD_CMD_TARGET}\`";
 
 mkdir -p bin
 if [ "$(uname)" = "Linux" ]; then
@@ -15,8 +17,12 @@ if [ "$(uname)" = "Linux" ]; then
 fi
 LINKFLAGS="-X github.com/rancher/helm-project-operator/pkg/version.Version=$VERSION"
 LINKFLAGS="-X github.com/rancher/helm-project-operator/pkg/version.GitCommit=$COMMIT $LINKFLAGS"
-CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o bin/helm-project-operator "${BUILD_TARGET_CMD}"
+BIN_DEST="bin/${BUILD_TARGET}"
+CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o "${BIN_DEST}" "${BUILD_CMD_TARGET}"
 if [ "$CROSS" = "true" ] && [ "$ARCH" = "amd64" ]; then
-    GOOS=darwin go build -ldflags "$LINKFLAGS" -o bin/helm-project-operator-darwin "${BUILD_TARGET_CMD}"
-    GOOS=windows go build -ldflags "$LINKFLAGS" -o bin/helm-project-operator-windows "${BUILD_TARGET_CMD}"
+    BIN_DEST="${BIN_DEST}, bin/${BUILD_TARGET}-darwin, bin/${BUILD_TARGET}-windows"
+    GOOS=darwin go build -ldflags "$LINKFLAGS" -o "bin/${BUILD_TARGET}-darwin" "${BUILD_CMD_TARGET}"
+    GOOS=windows go build -ldflags "$LINKFLAGS" -o "bin/${BUILD_TARGET}-windows" "${BUILD_CMD_TARGET}"
 fi
+
+echo "Build complete, binary at: \`"${BIN_DEST}"\`"

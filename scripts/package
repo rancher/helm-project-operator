@@ -1,9 +1,8 @@
 #!/bin/bash
 set -e
 
-DOCKER_TARGET=${DOCKER_TARGET:-"-${BUILD_TARGET}"}
-
 source $(dirname $0)/version
+DOCKER_TARGET=${DOCKER_TARGET:-"-${BUILD_TARGET}"}
 
 cd $(dirname $0)/..
 echo Building ${IMAGE} ...

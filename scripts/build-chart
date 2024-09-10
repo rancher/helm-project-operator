@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+BUILD_TARGET=${BUILD_TARGET:-"helm-project-operator"}
+
+if [[ "${BUILD_TARGET}" != "helm-project-operator" ]]; then
+  exit
+fi
+
 source $(dirname $0)/version
 
 cd $(dirname $0)/..
@@ -9,5 +15,5 @@ CHART=${CHART:-"project-operator-example"}
 VERSION=0.0.0
 
 helm package charts/${CHART} --destination bin/${CHART}
-base64 -i bin/${CHART}/${CHART}-${VERSION}.tgz > bin/${CHART}/${CHART}.tgz.base64
+base64 -i bin/${CHART}/${CHART}-${VERSION}.tgz > cmd/${BUILD_TARGET}/fs/${CHART}.tgz.base64
 rm bin/${CHART}/${CHART}-${VERSION}.tgz
