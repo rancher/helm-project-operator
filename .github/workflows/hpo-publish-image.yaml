@@ -1,4 +1,4 @@
-name : Publish images
+name: [helm-project-operator] Publish images
 
 on:
   push:

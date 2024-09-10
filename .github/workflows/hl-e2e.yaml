@@ -1,4 +1,4 @@
-name: CI-e2e
+name: [helm-locker] CI-e2e
 
 on:
   pull_request:
