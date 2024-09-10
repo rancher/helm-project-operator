@@ -28,7 +28,7 @@ var (
 	// DummySystemNamespaces is the system namespaces scoped for the dummy project-operator-example chart.
 	DummySystemNamespaces = []string{"kube-system"}
 
-	//go:embed bin/project-operator-example/project-operator-example.tgz.base64
+	//go:embed fs/project-operator-example.tgz.base64
 	base64TgzChart string
 
 	debugConfig command.DebugConfig
