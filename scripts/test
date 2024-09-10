@@ -3,5 +3,7 @@ set -e
 
 cd $(dirname $0)/..
 
+# TODO: Should we add logic to dest helm-locker stuff alone?
+
 echo Running tests
 go test -cover -tags=test ./...
