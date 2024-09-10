@@ -41,7 +41,7 @@ type DummyOperator struct {
 	Kubeconfig string `usage:"Kubeconfig file"`
 }
 
-func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
+func (o *DummyOperator) Run(cmd *cobra.Command, _ []string) error {
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()

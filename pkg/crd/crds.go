@@ -87,15 +87,15 @@ func Print(out io.Writer, depOut io.Writer) {
 	if err != nil {
 		logrus.Fatalf("%s", err)
 	}
-	if err := print(out, objs); err != nil {
+	if err := printCrd(out, objs); err != nil {
 		logrus.Fatalf("%s", err)
 	}
-	if err := print(depOut, depObjs); err != nil {
+	if err := printCrd(depOut, depObjs); err != nil {
 		logrus.Fatalf("%s", err)
 	}
 }
 
-func print(out io.Writer, objs []runtime.Object) error {
+func printCrd(out io.Writer, objs []runtime.Object) error {
 	data, err := yaml.Export(objs...)
 	if err != nil {
 		return err

@@ -24,7 +24,7 @@ type handler struct {
 func Register(
 	ctx context.Context,
 	apply apply.Apply,
-	opts common.HardeningOptions,
+	_ common.HardeningOptions,
 	namespaces corecontroller.NamespaceController,
 	namespaceCache corecontroller.NamespaceCache,
 	serviceaccounts corecontroller.ServiceAccountController,
@@ -48,7 +48,7 @@ func Register(
 	namespaces.OnChange(ctx, "harden-hpo-operated-namespace", h.OnChange)
 }
 
-func (h *handler) OnChange(name string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
+func (h *handler) OnChange(_ string, namespace *corev1.Namespace) (*corev1.Namespace, error) {
 	if namespace == nil {
 		return namespace, nil
 	}
