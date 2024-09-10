@@ -2,7 +2,7 @@
 
 ## What does E2E CI do?
 
-The E2E CI described in [.github/scripts/](../../../.github/workflows/e2e-ci.yaml) checks out the current Git repository, builds a Docker image using the repository's build scripts, sets up a [k3d](https://k3d.io) cluster, imports the built `helm-project-operator` image into the cluster (which automatically uses the latest `project-operator-example` chart since it is embedded into the binary as part of the build process), and then uses Helm to install `helm-project-operator` (using the Helm chart contained in the repository).
+The E2E CI described in [.github/scripts/](../../../.github/workflows/hpo-e2e-ci.yaml) checks out the current Git repository, builds a Docker image using the repository's build scripts, sets up a [k3d](https://k3d.io) cluster, imports the built `helm-project-operator` image into the cluster (which automatically uses the latest `project-operator-example` chart since it is embedded into the binary as part of the build process), and then uses Helm to install `helm-project-operator` (using the Helm chart contained in the repository).
 
 Once it is installed, it will run checks to ensure that all workloads are up and running in the Helm install and then mimic creating a Project (by creating a namespace with a particular label on it). 
 
@@ -14,7 +14,7 @@ Finally, it deletes the ProjectHelmChart, asserts the helm uninstall Job on the 
 
 To run the end-to-end GitHub Workflow CI locally to test whether your changes work, it's recommended to install [`nektos/act`](https://github.com/nektos/act).
 
-An slim image has been defined in [`.github/workflows/e2e/package/Dockerfile`](../../../.github/workflows/e2e/package/Dockerfile) that has the necessary dependencies to be used as a Runner for act for this GitHub Workflow. To build the image, run the following commmand (make sure you re-run it if you make any changes to add dependencies):
+An slim image has been defined in [`.github/workflows/e2e/package/Dockerfile-helm-project-operator`](../../../.github/workflows/e2e/package/Dockerfile-helm-project-operator) that has the necessary dependencies to be used as a Runner for act for this GitHub Workflow. To build the image, run the following commmand (make sure you re-run it if you make any changes to add dependencies):
 
 ```bash
 docker build -f ./.github/workflows/e2e/package/Dockerfile-helm-project-operator -t rancher/helm-project-operator-e2e:latest .
