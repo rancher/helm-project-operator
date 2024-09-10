@@ -1,4 +1,4 @@
-name: [helm-locker] Publish Images
+name: "[helm-locker] Publish Images"
 
 on:
   push:

@@ -1,4 +1,4 @@
-name: [helm-project-operator] E2E Helm Project Operator
+name: "[helm-project-operator] E2E Helm Project Operator"
 
 on:
   workflow_dispatch:

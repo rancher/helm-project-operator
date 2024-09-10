@@ -1,4 +1,4 @@
-name: [helm-project-operator] ci
+name: "[helm-project-operator] ci"
 
 env:
   CGO_ENABLED: 0
