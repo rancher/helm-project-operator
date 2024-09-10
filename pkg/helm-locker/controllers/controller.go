@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rancher/helm-project-operator/pkg/helm-locker/controllers/release"
+	"github.com/rancher/helm-project-operator/pkg/helm-locker/generated/controllers/helm.cattle.io"
 	helmcontroller "github.com/rancher/helm-project-operator/pkg/helm-locker/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/helm-locker/objectset"
 	"github.com/rancher/lasso/pkg/cache"
