@@ -5,9 +5,8 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
-
 	rspb "helm.sh/helm/v3/pkg/release"
+	"io"
 )
 
 // decodeRelease decodes the bytes of data into a release
@@ -29,7 +28,7 @@ func decodeRelease(data string) (*rspb.Release, error) {
 			return nil, err
 		}
 		defer r.Close()
-		b2, err := ioutil.ReadAll(r)
+		b2, err := io.ReadAll(r)
 		if err != nil {
 			return nil, err
 		}
