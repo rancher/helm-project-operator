@@ -3,7 +3,7 @@ name: "[helm-locker] Publish Images"
 on:
   push:
     tags:
-      - "*"
+      - "helm-locker/*"
 
 env:
   REGISTRY: docker.io

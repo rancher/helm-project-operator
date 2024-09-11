@@ -3,7 +3,7 @@ name: "[helm-project-operator] Publish images"
 on:
   push:
     tags:
-      - "*"
+      - "helm-project-operator/*"
 
 jobs:
   push:
