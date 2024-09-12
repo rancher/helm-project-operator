@@ -64,3 +64,12 @@ heritage: {{ $.Release.Service | quote }}
 {{ toYaml .Values.commonLabels }}
 {{- end }}
 {{- end -}}
+
+{{/* Replica Default - Allow setting to 0, or default to 1 */}}
+{{- define "replicaDefault" -}}
+{{- if (eq 0 (int .Values.replicas)) -}}
+{{ .Values.replicas }}
+{{- else -}}
+{{ default .Values.replicas 1 }}
+{{- end -}}
+{{- end -}}
