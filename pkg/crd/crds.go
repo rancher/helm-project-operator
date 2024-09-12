@@ -106,7 +106,7 @@ func printCrd(out io.Writer, objs []runtime.Object) error {
 
 // Objects returns runtime.Objects for every CRD or CRD Dependency this operator relies on
 func Objects(v1beta1 bool) (crds, crdDeps []runtime.Object, err error) {
-	crdDefs, crdDepDefs := List()
+	crdDefs, crdDepDefs := List(false)
 	crds, err = objects(v1beta1, crdDefs)
 	if err != nil {
 		return nil, nil, err
