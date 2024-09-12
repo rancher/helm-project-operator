@@ -138,7 +138,7 @@ func objects(v1beta1 bool, crdDefs []crd.CRD) (crds []runtime.Object, err error)
 }
 
 // List returns the list of CRDs and dependent CRDs for this operator
-func List() ([]crd.CRD, []crd.CRD) {
+func List(skipHelmControllerCrds bool) ([]crd.CRD, []crd.CRD) {
 	crds := []crd.CRD{
 		newCRD(&v1alpha1.ProjectHelmChart{}, func(c crd.CRD) crd.CRD {
 			return c.
@@ -149,18 +149,22 @@ func List() ([]crd.CRD, []crd.CRD) {
 				WithColumn("Target Namespaces", ".status.targetNamespaces")
 		}),
 	}
-	crdDeps := append(helmcontrollercrd.List(), helmlockercrd.List()...)
+	crdDeps := helmlockercrd.List()
+	if !skipHelmControllerCrds {
+		crdDeps = append(crdDeps, helmcontrollercrd.List()...)
+	}
+
 	return crds, crdDeps
 }
 
 // Create creates all CRDs and dependent CRDs in the cluster
-func Create(ctx context.Context, cfg *rest.Config) error {
+func Create(ctx context.Context, cfg *rest.Config, skipHelmControllerCrds bool) error {
 	factory, err := crd.NewFactoryFromClient(cfg)
 	if err != nil {
 		return err
 	}
 
-	crds, crdDeps := List()
+	crds, crdDeps := List(skipHelmControllerCrds)
 	return factory.BatchCreateCRDs(ctx, append(crds, crdDeps...)...).BatchWait()
 }
 

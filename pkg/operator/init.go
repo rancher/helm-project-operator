@@ -26,7 +26,7 @@ func Init(ctx context.Context, systemNamespace string, cfg clientcmd.ClientConfi
 	}
 	clientConfig.RateLimiter = ratelimit.None
 
-	if err := crd.Create(ctx, clientConfig); err != nil {
+	if err := crd.Create(ctx, clientConfig, opts.DisableEmbeddedHelmController); err != nil {
 		return err
 	}
 
