@@ -5,6 +5,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'go.mod'
+      - 'charts/helm-locker*/**'
+      - 'crds/helm-locker/**'
+      - 'package/Dockerfile-helm-locker'
+      - 'cmd/helm-locker/**'
+      - 'pkg/helm-locker/**'
 
 env:
   CLUSTER_NAME : test-cluster
