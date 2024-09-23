@@ -13,6 +13,5 @@ annotations:
   catalog.cattle.io/release-name: helm-locker-example
   catalog.cattle.io/os: linux,windows
 maintainers:
-- email: arvind.iyengar@suse.com
-  name: aiyengar2
-
+  - email: dan.pock@suse.com
+    name: mallardduck
