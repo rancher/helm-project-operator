@@ -10,7 +10,7 @@ annotations:
   catalog.cattle.io/namespace: cattle-helm-system
   catalog.cattle.io/permits-os: linux,windows
   catalog.cattle.io/provides-gvr: helm.cattle.io.helmrelease/v1alpha1
-  catalog.cattle.io/rancher-version: '>= 2.6.0-0 <=2.6.99-0'
+  catalog.cattle.io/rancher-version: '>= 2.6.0-0'
   catalog.cattle.io/release-name: helm-locker
   catalog.cattle.io/os: linux,windows
 maintainers:
