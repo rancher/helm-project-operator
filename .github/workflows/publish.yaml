@@ -11,7 +11,7 @@ env:
 
 jobs:
   push:
-    name : Build and push helm-locker images 
+    name : Build and push helm-locker & Helm-Project-Operator images
     runs-on : ubuntu-latest
     permissions:
       contents: read
