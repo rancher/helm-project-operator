@@ -1,0 +1,66 @@
+name: "Publish Images"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  push:
+    name : Build and push helm-locker images 
+    runs-on : ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - name : Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name : Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name : Build, test & validate
+        run : BUILD_TARGET=helm-locker make ci
+      - name: Extract metadata (tags, labels) for helm-locker image
+        id: meta-locker
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/helm-locker
+      - name: Build and push helm-locker image
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./package/Dockerfile-helm-locker
+          push: true
+          tags: ${{ steps.meta-locker.outputs.tags }}
+          labels: ${{ steps.meta-locker.outputs.labels }}
+          platforms : linux/amd64,linux/arm64
+      - name: Extract metadata (tags, labels) for Helm-Project-Operator image
+        id: meta-hpo
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/helm-project-operator
+      - name: Build Helm-Project-Operator image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./package/Dockerfile-helm-project-operator
+          push: true
+          tags: ${{ steps.meta-hpo.outputs.tags }}
+          labels: ${{ steps.meta-hpo.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
