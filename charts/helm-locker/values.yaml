@@ -48,8 +48,8 @@ namespaceOverride: ""
 replicas: 1
 
 image:
-  repository: rancher/helm-locker
-  tag: v0.0.2
+  repository: ghcr.io/rancher/helm-project-operator/helm-locker
+  tag: v0.3.0
   pullPolicy: IfNotPresent
 
 # Additional arguments to be passed into the Helm Locker image
