@@ -1,11 +1,16 @@
 helm-project-operator
 ========
 
-The Helm Project Operator is a generic design for a Kubernetes Operator that acts on `ProjectHelmChart` CRs.
+This repo contains a set of two interlinked projects:
 
-**Note: this project is not intended for standalone use.** 
+- The **Helm Project Operator** is a generic design for a Kubernetes Operator that acts on `ProjectHelmChart` CRs.
+- **Helm Locker** is a Kubernetes operator that prevents resource drift on (i.e. "locks") Kubernetes objects that are tracked by Helm 3 releases.
 
-It is intended to be implemented by a Project Operator (e.g. [`rancher/prometheus-federator`](https://github.com/rancher/prometheus-federator)) but provides a common definition for all Project Operators to use in order to support deploy specific, pre-bundled Helm charts (tied to a unique registered `spec.helmApiVersion` associated with the operator) across all project namespaces detected by this operator.
+**Note: These project are not intended for standalone use.** 
+
+For more info on _Helm Locker_, see the [dedicated README file](README-helm-locker.md).
+
+Helm Project Operator is intended to be implemented by a Project Operator (e.g. [`rancher/prometheus-federator`](https://github.com/rancher/prometheus-federator)) but provides a common definition for all Project Operators to use in order to support deploy specific, pre-bundled Helm charts (tied to a unique registered `spec.helmApiVersion` associated with the operator) across all project namespaces detected by this operator.
 
 ## Getting Started
 
