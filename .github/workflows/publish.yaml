@@ -54,7 +54,7 @@ jobs:
         id: meta-hpo
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/helm-project-operator
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Build Helm-Project-Operator image
         uses: docker/build-push-action@v5
         with:
