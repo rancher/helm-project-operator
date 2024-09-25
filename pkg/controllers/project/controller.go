@@ -6,11 +6,11 @@ import (
 
 	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
 	k3shelmcontroller "github.com/k3s-io/helm-controller/pkg/generated/controllers/helm.cattle.io/v1"
-	helmlockercontroller "github.com/rancher/helm-locker/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/helm-project-operator/pkg/controllers/namespace"
 	helmprojectcontroller "github.com/rancher/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
+	helmlockercontroller "github.com/rancher/helm-project-operator/pkg/helm-locker/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/remove"
 	"github.com/rancher/wrangler/pkg/apply"
 	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
@@ -128,7 +128,7 @@ func Register(
 		})
 
 	remove.RegisterScopedOnRemoveHandler(ctx, projectHelmCharts, "on-project-helm-chart-remove",
-		func(key string, obj runtime.Object) (bool, error) {
+		func(_ string, obj runtime.Object) (bool, error) {
 			if obj == nil {
 				return false, nil
 			}
@@ -315,7 +315,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	return objs, projectHelmChartStatus, nil
 }
 
-func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmChart) (*v1alpha1.ProjectHelmChart, error) {
+func (h *handler) OnRemove(_ string, projectHelmChart *v1alpha1.ProjectHelmChart) (*v1alpha1.ProjectHelmChart, error) {
 	if projectHelmChart == nil {
 		return nil, nil
 	}
@@ -326,7 +326,7 @@ func (h *handler) OnRemove(key string, projectHelmChart *v1alpha1.ProjectHelmCha
 		return projectHelmChart, err
 	}
 
-	// Get orphaned release namsepace and apply it; if another ProjectHelmChart exists in this namespace, it will automatically remove
+	// Get orphaned release namespace and apply it; if another ProjectHelmChart exists in this namespace, it will automatically remove
 	// the orphaned label on enqueuing the namespace since that will enqueue all ProjectHelmCharts associated with it
 	projectReleaseNamespace := h.getProjectReleaseNamespace(projectID, true, projectHelmChart)
 	if projectReleaseNamespace == nil {

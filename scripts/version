@@ -1,5 +1,7 @@
 #!/bin/bash
 
+BUILD_TARGET=${BUILD_TARGET:-"helm-project-operator"}
+
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     DIRTY="-dirty"
 fi
@@ -19,4 +21,4 @@ REPO=${REPO:-rancher}
 if echo $TAG | grep -q dirty; then
     TAG=dev
 fi
-IMAGE=${IMAGE:-${REPO}/helm-project-operator:${TAG}}
+IMAGE=${IMAGE:-${REPO}/${BUILD_TARGET}:${TAG}}

@@ -3,5 +3,10 @@ set -e
 
 cd $(dirname $0)/..
 
+TARGET_TAG=helm_project_operator
+if [[ "${BUILD_TARGET}" == "helm-locker" ]]; then
+  TARGET_TAG=helm_locker
+fi
+
 echo Running tests
-go test -cover -tags=test ./...
+go test -cover -tags="test,${TARGET_TAG}" ./...

@@ -1,6 +1,8 @@
 /.dapper
 /.cache
 /bin
+!/cmd/helm-project-operator/fs/.gitkeep
+/cmd/helm-project-operator/fs/*
 /dist
 *.swp
 .idea

@@ -3,6 +3,8 @@ set -e
 
 cd $(dirname $0)
 
+export BUILD_TARGET
+
 ./build
 ./test
 ./package

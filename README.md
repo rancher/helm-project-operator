@@ -1,15 +1,20 @@
 helm-project-operator
 ========
 
-The Helm Project Operator is a generic design for a Kubernetes Operator that acts on `ProjectHelmChart` CRs.
+This repo contains a set of two interlinked projects:
 
-**Note: this project is not intended for standalone use.** 
+- The **Helm Project Operator** is a generic design for a Kubernetes Operator that acts on `ProjectHelmChart` CRs.
+- **Helm Locker** is a Kubernetes operator that prevents resource drift on (i.e. "locks") Kubernetes objects that are tracked by Helm 3 releases.
 
-It is intended to be implemented by a Project Operator (e.g. [`rancher/prometheus-federator`](https://github.com/rancher/prometheus-federator)) but provides a common definition for all Project Operators to use in order to support deploy specific, pre-bundled Helm charts (tied to a unique registered `spec.helmApiVersion` associated with the operator) across all project namespaces detected by this operator.
+**Note: These project are not intended for standalone use.** 
+
+For more info on _Helm Locker_, see the [dedicated README file](README-helm-locker.md).
+
+Helm Project Operator is intended to be implemented by a Project Operator (e.g. [`rancher/prometheus-federator`](https://github.com/rancher/prometheus-federator)) but provides a common definition for all Project Operators to use in order to support deploy specific, pre-bundled Helm charts (tied to a unique registered `spec.helmApiVersion` associated with the operator) across all project namespaces detected by this operator.
 
 ## Getting Started
 
-For more information, see the [Getting Started guide](docs/gettingstarted.md).
+For more information, see the [Getting Started guide](docs/helm-project-operator/gettingstarted.md).
 
 ## Developing
 
@@ -17,7 +22,7 @@ For more information, see the [Getting Started guide](docs/gettingstarted.md).
 
 Helm Project Operator is built and released off the contents of the `main` branch. To make a contribution, open up a PR to the `main` branch.
 
-For more information, see the [Developing guide](docs/developing.md).
+For more information, see the [Developing guide](docs/helm-project-operator/developing.md).
 
 ## Design
 
@@ -25,7 +30,7 @@ Helm Project Operator is built on top of [k3s-io/helm-controller](https://github
 
 For an example of how Helm Project Operator can be implemented, please see [`rancher/prometheus-federator`](https://github.com/rancher/prometheus-federator).
 
-For more information in general, please see [docs/design.md](docs/design.md).
+For more information in general, please see [docs/design.md](docs/helm-project-operator/design.md).
 
 ## Building
 

@@ -13,3 +13,6 @@ annotations:
   catalog.cattle.io/rancher-version: '>= 2.6.0-0'
   catalog.cattle.io/release-name: helm-project-operator
   catalog.cattle.io/os: linux,windows
+maintainers:
+  - email: dan.pock@suse.com
+    name: mallardduck

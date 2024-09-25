@@ -3,10 +3,10 @@ package project
 import (
 	helmcontrollerv1 "github.com/k3s-io/helm-controller/pkg/apis/helm.cattle.io/v1"
 	"github.com/k3s-io/helm-controller/pkg/controllers/chart"
-	helmlockerv1alpha1 "github.com/rancher/helm-locker/pkg/apis/helm.cattle.io/v1alpha1"
-	"github.com/rancher/helm-locker/pkg/controllers/release"
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
+	helmlockerv1alpha1 "github.com/rancher/helm-project-operator/pkg/helm-locker/apis/helm.cattle.io/v1alpha1"
+	"github.com/rancher/helm-project-operator/pkg/helm-locker/controllers/release"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

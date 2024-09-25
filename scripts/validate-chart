@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+if [[ "${BUILD_TARGET}" != "helm-project-operator" ]]; then
+  exit
+fi
+
 cd $(dirname $0)/..
 
 app_version=$(yq e '.appVersion' charts/helm-project-operator/Chart.yaml)

@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	helmcontrollercrd "github.com/k3s-io/helm-controller/pkg/crd"
-	helmlockercrd "github.com/rancher/helm-locker/pkg/crd"
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
+	helmlockercrd "github.com/rancher/helm-project-operator/pkg/helm-locker/crd"
 	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/yaml"
 	"github.com/sirupsen/logrus"
@@ -65,7 +65,7 @@ func writeFiles(dirpath string, objs []runtime.Object) error {
 	for key, data := range objMap {
 		go func(key string, data []byte) {
 			defer wg.Done()
-			f, err := os.Create(filepath.Join(dirpath, fmt.Sprintf("crd-%s.yaml", key)))
+			f, err := os.Create(filepath.Join(dirpath, fmt.Sprintf("%s.yaml", key)))
 			if err != nil {
 				logrus.Error(err)
 			}
@@ -87,15 +87,15 @@ func Print(out io.Writer, depOut io.Writer) {
 	if err != nil {
 		logrus.Fatalf("%s", err)
 	}
-	if err := print(out, objs); err != nil {
+	if err := printCrd(out, objs); err != nil {
 		logrus.Fatalf("%s", err)
 	}
-	if err := print(depOut, depObjs); err != nil {
+	if err := printCrd(depOut, depObjs); err != nil {
 		logrus.Fatalf("%s", err)
 	}
 }
 
-func print(out io.Writer, objs []runtime.Object) error {
+func printCrd(out io.Writer, objs []runtime.Object) error {
 	data, err := yaml.Export(objs...)
 	if err != nil {
 		return err
