@@ -3,6 +3,7 @@ set -e
 
 BUILD_TARGET=${BUILD_TARGET:-"helm-project-operator"}
 
+# We don't do this for helm-locker
 if [[ "${BUILD_TARGET}" != "helm-project-operator" ]]; then
   exit
 fi

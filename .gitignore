@@ -1,6 +1,7 @@
 /.dapper
 /.cache
 /bin
+/build
 !/cmd/helm-project-operator/fs/.gitkeep
 /cmd/helm-project-operator/fs/*
 /dist
@@ -8,3 +9,4 @@
 .idea
 /helm-project-operator
 /.vscode
+get_helm.sh
