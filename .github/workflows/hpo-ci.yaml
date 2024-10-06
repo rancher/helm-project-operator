@@ -3,8 +3,15 @@ name: "[helm-project-operator] ci"
 env:
   CGO_ENABLED: 0
   YQ_VERSION: v4.25.1
+on:
+  pull_request:
+  workflow_call:
+    inputs:
+      skip_build:
+        default: 'false'
+        required: false
+        type: string
 
-on: [ pull_request ]
 permissions:
   contents: read
 jobs:
@@ -30,6 +37,7 @@ jobs:
       - name: Perform CI
         run : make ci
   build-images:
+    if: ${{ inputs.skip_build != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
