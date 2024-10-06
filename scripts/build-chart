@@ -9,12 +9,20 @@ if [[ "${BUILD_TARGET}" != "helm-project-operator" ]]; then
 fi
 
 source $(dirname $0)/version
+source $(dirname $0)/util-chart
 
 cd $(dirname $0)/..
 
 CHART=${CHART:-"project-operator-example"}
-VERSION=0.0.0
 
-helm package charts/${CHART} --destination bin/${CHART}
-base64 -i bin/${CHART}/${CHART}-${VERSION}.tgz > cmd/${BUILD_TARGET}/fs/${CHART}.tgz.base64
-rm bin/${CHART}/${CHART}-${VERSION}.tgz
+# Prepare base chart for build
+rm -rf build/charts
+mkdir -p build/charts dist/artifacts
+cp -rf "charts/${CHART}" build/charts/
+
+# Update the chart placeholders
+edit-charts "build/charts/${CHART}/Chart.yaml" "${HELM_CHART_VERSION}" "${HELM_IMAGE_TAG}"
+package-charts "./build/charts/${CHART}" ./dist/charts
+
+# Prepare chart for embedding location
+base64 -i "./dist/charts/${CHART}-${HELM_CHART_VERSION}.tgz" > "cmd/${BUILD_TARGET}/fs/${CHART}.tgz.base64"

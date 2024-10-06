@@ -1,29 +1,19 @@
 #!/bin/bash
 set -e
 
-function edit-charts() {
-    sed -i \
-        -e 's/^version:.*/version: '${1}'/' \
-        -e 's/^appVersion:.*/appVersion: '${2}'/' \
-        build/charts/helm-project-operator/Chart.yaml
-}
-
-function package-charts() {
-    helm package --debug -d ./dist/artifacts ./build/charts/helm-project-operator
-}
-
 if ! hash helm 2>/dev/null; then
     echo "Helm is not installed"
     exit 1
 fi
 
-cd $(dirname $0)/..
+cd "$(dirname $0)/.."
 source ./scripts/version
+source ./scripts/util-chart
 
 rm -rf build/charts
 mkdir -p build/charts dist/artifacts
 cp -rf charts/helm-project-operator build/charts/
 
-edit-charts "${HELM_CHART_VERSION}" "${HELM_IMAGE_TAG}"
+edit-charts build/charts/helm-project-operator/Chart.yaml "${HELM_CHART_VERSION}" "${HELM_IMAGE_TAG}"
 cp -a ./build/charts/helm-project-operator/ ./dist/chart
 package-charts
