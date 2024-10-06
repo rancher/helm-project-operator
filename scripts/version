@@ -38,3 +38,13 @@ if echo $TAG | grep -q dirty; then
     HELM_CHART_VERSION=${HELM_CHART_VERSION_DEV:-${HELM_IMAGE_TAG/v/}}
 fi
 IMAGE=${IMAGE:-${REPO}/${BUILD_TARGET}:${TAG}}
+
+function print_version_debug() {
+    echo "BUILD_TARGET: $BUILD_TARGET";
+    echo "SUFFIX: $SUFFIX";
+    echo "HELM_IMAGE_TAG: $HELM_IMAGE_TAG";
+    echo "HELM_CHART_VERSION: $HELM_CHART_VERSION";
+    echo "REPO: $REPO; TAG: $TAG";
+    echo "IMAGE: $IMAGE";
+}
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then print_version_debug "$1"; fi
