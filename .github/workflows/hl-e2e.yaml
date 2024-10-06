@@ -32,12 +32,12 @@ jobs:
         run : |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-      - name: Set up k3d
-        run : ./.github/workflows/e2e/scripts/install-k3d.sh
       - name: build
         run: BUILD_TARGET=helm-locker make build
-      - name : Setup cluster
-        run :  CLUSTER_NAME=${{ env.CLUSTER_NAME }} K3S_VERSION=${{ env.K3S_VERSION }} ./scripts/setup-cluster.sh
+      - name : Install k3d
+        run : ./.github/workflows/e2e/scripts/install-k3d.sh
+      - name : Setup k3d cluster
+        run : CLUSTER_NAME=e2e-ci-helm-project-operator K3S_VERSION=${{ matrix.k3s_version }} ./.github/workflows/e2e/scripts/setup-cluster.sh
       # temporary hack to run the helm-locker controller in the k3d cluster
       - name : run helm-locker
         run : |
