@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-
 source $(dirname $0)/version
 BUILD_CMD_TARGET=${BUILD_CMD_TARGET:-"./cmd/${BUILD_TARGET}/main.go"}
 
@@ -18,11 +17,30 @@ fi
 LINKFLAGS="-X github.com/rancher/helm-project-operator/pkg/version.Version=$VERSION"
 LINKFLAGS="-X github.com/rancher/helm-project-operator/pkg/version.GitCommit=$COMMIT $LINKFLAGS"
 BIN_DEST="bin/${BUILD_TARGET}"
-CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o "${BIN_DEST}" "${BUILD_CMD_TARGET}"
-if [ "$CROSS" = "true" ] && [ "$ARCH" = "amd64" ]; then
-    BIN_DEST="${BIN_DEST}, bin/${BUILD_TARGET}-darwin, bin/${BUILD_TARGET}-windows"
-    GOOS=darwin go build -ldflags "$LINKFLAGS" -o "bin/${BUILD_TARGET}-darwin" "${BUILD_CMD_TARGET}"
-    GOOS=windows go build -ldflags "$LINKFLAGS" -o "bin/${BUILD_TARGET}-windows" "${BUILD_CMD_TARGET}"
+
+ARCHES=( "$ARCH" )
+# Set CROSS_ARCH to build for the other architecture
+if [ "$CROSS_ARCH" == "true" ]; then
+  case "$ARCH" in
+    amd64) XARCH=arm64 ;;
+    arm64) XARCH=amd64 ;;
+    *) echo "Unsupported ARCH of $ARCH" 1>&2 ; exit 1
+  esac
+  ARCHES+=( "$XARCH" )
 fi
+
+for A in "${ARCHES[@]}" ; do
+  GOARCH="$A" CGO_ENABLED=0 go build -ldflags "$LINKFLAGS $OTHER_LINKFLAGS" -o "${BIN_DEST}-$A" "${BUILD_CMD_TARGET}"
+  # Set CROSS to build for other OS'es
+  if [ "$CROSS" = "true" ]; then
+    for OS in darwin windows ; do
+          GOARCH="$A" GOOS=$OS go build -ldflags "$LINKFLAGS" -o "${BIN_DEST}-$OS-$A" "${BUILD_CMD_TARGET}"
+    done
+  fi
+done
+
+cd bin
+ln -sf "${BUILD_TARGET}-$ARCH" "${BUILD_TARGET}"
+cd ..
 
 echo "Build complete, binary at: \`"${BIN_DEST}"\`"
