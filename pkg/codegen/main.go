@@ -26,7 +26,7 @@ func main() {
 	os.Unsetenv("GOPATH")
 	controllergen.Run(args.Options{
 		OutputPackage: "github.com/rancher/helm-project-operator/pkg/generated",
-		Boilerplate:   "scripts/boilerplate.go.txt",
+		Boilerplate:   "gen/boilerplate.go.txt",
 		Groups: map[string]args.Group{
 			"helm.cattle.io": {
 				Types: []interface{}{
