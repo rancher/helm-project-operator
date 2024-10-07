@@ -5,7 +5,7 @@ source $(dirname $0)/entry
 
 cd $(dirname $0)/../../../..
 
-kubectl apply -f ./examples/helm-project-operator/ci-example.yaml
+kubectl apply -f ./examples/helm-project-operator/ci/project-helm-chart.yaml
 sleep ${DEFAULT_SLEEP_TIMEOUT_SECONDS};
 
 if ! kubectl get -n cattle-helm-system job/helm-install-project-operator-example-chart-dummy; then

@@ -1,8 +1,8 @@
 apiVersion: v2
 name: helm-project-operator
 description: Helm Project Operator
-version: 0.2.1
-appVersion: 0.2.1
+version: 9.9.9-dev
+appVersion: 9.9.9-dev
 annotations:
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/display-name: Helm Project Operator
@@ -15,4 +15,4 @@ annotations:
   catalog.cattle.io/os: linux,windows
 maintainers:
   - email: dan.pock@suse.com
-    name: mallardduck
+    name: Dan Pock
