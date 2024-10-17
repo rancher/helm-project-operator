@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repo will soon be archived. The code here is now maintained as a [sub-package](https://github.com/rancher/prometheus-federator/tree/main/pkg/helm-project-operator) of the [`prometheus-federator`](https://github.com/rancher/prometheus-federator) repository.
+
 helm-project-operator
 ========
 
