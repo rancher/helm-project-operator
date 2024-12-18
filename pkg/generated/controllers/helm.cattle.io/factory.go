@@ -19,7 +19,7 @@ limitations under the License.
 package helm
 
 import (
-	"github.com/rancher/wrangler/pkg/generic"
+	"github.com/rancher/wrangler/v3/pkg/generic"
 	"k8s.io/client-go/rest"
 )
 

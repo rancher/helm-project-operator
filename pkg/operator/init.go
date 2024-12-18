@@ -7,7 +7,7 @@ import (
 	"github.com/rancher/helm-project-operator/pkg/controllers"
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/helm-project-operator/pkg/crd"
-	"github.com/rancher/wrangler/pkg/ratelimit"
+	"github.com/rancher/wrangler/v3/pkg/ratelimit"
 	"k8s.io/client-go/tools/clientcmd"
 )
 

@@ -12,10 +12,10 @@ import (
 	"github.com/rancher/helm-project-operator/pkg/controllers/namespace"
 	helmprojectcontroller "github.com/rancher/helm-project-operator/pkg/generated/controllers/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/remove"
-	"github.com/rancher/wrangler/pkg/apply"
-	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	rbaccontroller "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
-	"github.com/rancher/wrangler/pkg/generic"
+	"github.com/rancher/wrangler/v3/pkg/apply"
+	corecontroller "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
+	rbaccontroller "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
+	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -177,6 +177,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	// initial checks to see if we should handle this
 	shouldManage := h.shouldManage(projectHelmChart)
 	if !shouldManage {
+		logrus.Infof("should not manage project helm-chart %s%s", projectHelmChart.Namespace, projectHelmChart.Name)
 		return nil, projectHelmChartStatus, nil
 	}
 	if projectHelmChart.DeletionTimestamp != nil {
@@ -193,6 +194,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	// get information about the projectHelmChart
 	projectID, err := h.getProjectID(projectHelmChart)
 	if err != nil {
+		logrus.Errorf("failed to get project id from project helm chart : %s", err)
 		return nil, projectHelmChartStatus, err
 	}
 	releaseNamespace, releaseName := h.getReleaseNamespaceAndName(projectHelmChart)
@@ -200,6 +202,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	// check if the releaseName is already tracked by another ProjectHelmChart
 	projectHelmCharts, err := h.projectHelmChartCache.GetByIndex(ProjectHelmChartByReleaseName, releaseName)
 	if err != nil {
+		logrus.Errorf("unable to get ProjectHelmCharts to verify if release is already tracked %s", err)
 		return nil, projectHelmChartStatus, fmt.Errorf("unable to get ProjectHelmCharts to verify if release is already tracked: %s", err)
 	}
 	for _, conflictingProjectHelmChart := range projectHelmCharts {
@@ -207,14 +210,17 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 			continue
 		}
 		if projectHelmChart.Name == conflictingProjectHelmChart.Name && projectHelmChart.Namespace == conflictingProjectHelmChart.Namespace {
+			logrus.Info("conflicting ProjectHelmChart is the same as we have found")
 			// looking at the same projectHelmChart that we have at hand
 			continue
 		}
 		if len(conflictingProjectHelmChart.Status.Status) == 0 {
 			// the other ProjectHelmChart hasn't been processed yet, so let it fail out whenever it is processed
+			logrus.Info("ProjectHelmChart hasn't been processed, delegating processing to whoever manages it?")
 			continue
 		}
 		if conflictingProjectHelmChart.Status.Status == "UnableToCreateHelmRelease" {
+			logrus.Infof("conflicting ProjectHelmChart status failed to deploy, continuing with given version")
 			// the other ProjectHelmChart is the one that will not be able to progress, so we can continue to update this one
 			continue
 		}
@@ -224,6 +230,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 			conflictingProjectHelmChart.Namespace, conflictingProjectHelmChart.Name,
 			releaseName, releaseNamespace,
 		)
+		logrus.Error(err.Error())
 		projectHelmChartStatus = h.getUnableToCreateHelmReleaseStatus(projectHelmChart, projectHelmChartStatus, err)
 		return nil, projectHelmChartStatus, nil
 	}
@@ -236,6 +243,7 @@ func (h *handler) OnChange(projectHelmChart *v1alpha1.ProjectHelmChart, projectH
 	// gather target project namespaces
 	targetProjectNamespaces, err := h.projectGetter.GetTargetProjectNamespaces(projectHelmChart)
 	if err != nil {
+		logrus.Errorf("unable to find project namespaces to deploy ProjectHelmChart: %s", err)
 		return nil, projectHelmChartStatus, fmt.Errorf("unable to find project namespaces to deploy ProjectHelmChart: %s", err)
 	}
 	if len(targetProjectNamespaces) == 0 {

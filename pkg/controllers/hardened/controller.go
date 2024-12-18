@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
-	"github.com/rancher/wrangler/pkg/apply"
-	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	networkingcontroller "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io/v1"
+	"github.com/rancher/wrangler/v3/pkg/apply"
+	corecontroller "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
+	networkingcontroller "github.com/rancher/wrangler/v3/pkg/generated/controllers/networking.k8s.io/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

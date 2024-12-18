@@ -22,20 +22,20 @@ import (
 	"github.com/rancher/lasso/pkg/cache"
 	"github.com/rancher/lasso/pkg/client"
 	"github.com/rancher/lasso/pkg/controller"
-	"github.com/rancher/wrangler/pkg/apply"
-	batch "github.com/rancher/wrangler/pkg/generated/controllers/batch"
-	batchcontroller "github.com/rancher/wrangler/pkg/generated/controllers/batch/v1"
-	"github.com/rancher/wrangler/pkg/generated/controllers/core"
-	corecontroller "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	"github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io"
-	networkingcontroller "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io/v1"
-	rbac "github.com/rancher/wrangler/pkg/generated/controllers/rbac"
-	rbaccontroller "github.com/rancher/wrangler/pkg/generated/controllers/rbac/v1"
-	"github.com/rancher/wrangler/pkg/generic"
-	"github.com/rancher/wrangler/pkg/leader"
-	"github.com/rancher/wrangler/pkg/ratelimit"
-	"github.com/rancher/wrangler/pkg/schemes"
-	"github.com/rancher/wrangler/pkg/start"
+	"github.com/rancher/wrangler/v3/pkg/apply"
+	batch "github.com/rancher/wrangler/v3/pkg/generated/controllers/batch"
+	batchcontroller "github.com/rancher/wrangler/v3/pkg/generated/controllers/batch/v1"
+	"github.com/rancher/wrangler/v3/pkg/generated/controllers/core"
+	corecontroller "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
+	"github.com/rancher/wrangler/v3/pkg/generated/controllers/networking.k8s.io"
+	networkingcontroller "github.com/rancher/wrangler/v3/pkg/generated/controllers/networking.k8s.io/v1"
+	rbac "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac"
+	rbaccontroller "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
+	"github.com/rancher/wrangler/v3/pkg/generic"
+	"github.com/rancher/wrangler/v3/pkg/leader"
+	"github.com/rancher/wrangler/v3/pkg/ratelimit"
+	"github.com/rancher/wrangler/v3/pkg/schemes"
+	"github.com/rancher/wrangler/v3/pkg/start"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/discovery"
@@ -189,6 +189,9 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 		chart.Register(ctx,
 			systemNamespace,
 			opts.ControllerName,
+			// this has to be cluster-admin for k3s reasons
+			"cluster-admin",
+			"6443",
 			appCtx.K8s,
 			appCtx.Apply,
 			recorder,
@@ -200,7 +203,9 @@ func Register(ctx context.Context, systemNamespace string, cfg clientcmd.ClientC
 			appCtx.Batch.Job().Cache(),
 			appCtx.RBAC.ClusterRoleBinding(),
 			appCtx.Core.ServiceAccount(),
-			appCtx.Core.ConfigMap())
+			appCtx.Core.ConfigMap(),
+			appCtx.Core.Secret(),
+		)
 	}
 
 	leader.RunOrDie(ctx, systemNamespace, fmt.Sprintf("helm-project-operator-%s-lock", opts.ReleaseName), appCtx.K8s, func(ctx context.Context) {

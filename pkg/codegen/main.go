@@ -7,8 +7,8 @@ import (
 	"github.com/rancher/helm-project-operator/pkg/crd"
 	"github.com/sirupsen/logrus"
 
-	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
-	"github.com/rancher/wrangler/pkg/controller-gen/args"
+	controllergen "github.com/rancher/wrangler/v3/pkg/controller-gen"
+	"github.com/rancher/wrangler/v3/pkg/controller-gen/args"
 )
 
 func main() {

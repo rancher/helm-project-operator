@@ -6,13 +6,14 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	command "github.com/rancher/helm-project-operator/pkg/cli"
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
 	"github.com/rancher/helm-project-operator/pkg/operator"
+	"github.com/rancher/helm-project-operator/pkg/test"
 	"github.com/rancher/helm-project-operator/pkg/version"
-	command "github.com/rancher/wrangler-cli"
-	_ "github.com/rancher/wrangler/pkg/generated/controllers/apiextensions.k8s.io"
-	_ "github.com/rancher/wrangler/pkg/generated/controllers/networking.k8s.io"
-	"github.com/rancher/wrangler/pkg/kubeconfig"
+	_ "github.com/rancher/wrangler/v3/pkg/generated/controllers/apiextensions.k8s.io"
+	_ "github.com/rancher/wrangler/v3/pkg/generated/controllers/networking.k8s.io"
+	"github.com/rancher/wrangler/v3/pkg/kubeconfig"
 	"github.com/spf13/cobra"
 )
 
@@ -27,9 +28,6 @@ const (
 var (
 	// DummySystemNamespaces is the system namespaces scoped for the dummy example-chart.
 	DummySystemNamespaces = []string{"kube-system"}
-
-	//go:embed bin/example-chart/example-chart.tgz.base64
-	base64TgzChart string
 
 	debugConfig command.DebugConfig
 )
@@ -56,7 +54,7 @@ func (o *DummyOperator) Run(cmd *cobra.Command, args []string) error {
 			HelmAPIVersion:   DummyHelmAPIVersion,
 			ReleaseName:      DummyReleaseName,
 			SystemNamespaces: DummySystemNamespaces,
-			ChartContent:     base64TgzChart,
+			ChartContent:     string(test.TestData("example-chart/example-chart.tgz.base64")),
 			Singleton:        false,
 		},
 		RuntimeOptions: o.RuntimeOptions,

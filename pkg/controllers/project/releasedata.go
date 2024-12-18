@@ -7,7 +7,7 @@ import (
 
 	v1alpha1 "github.com/rancher/helm-project-operator/pkg/apis/helm.cattle.io/v1alpha1"
 	"github.com/rancher/helm-project-operator/pkg/controllers/common"
-	"github.com/rancher/wrangler/pkg/data"
+	"github.com/rancher/wrangler/v3/pkg/data"
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
